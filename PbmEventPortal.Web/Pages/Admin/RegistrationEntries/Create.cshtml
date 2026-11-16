@@ -1,0 +1,313 @@
+@page
+@using System.Text.Json
+@model PbmEventPortal.Web.Pages.Admin.RegistrationEntries.CreateModel
+@{
+    ViewData["Title"] = "Add Registration Entry";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+
+    var categoryMetadataJson = JsonSerializer.Serialize(Model.Options.CategoryMetadata);
+    var participantMetadataJson = JsonSerializer.Serialize(Model.Options.ParticipantMetadata);
+    var selectedParticipantIdsJson = JsonSerializer.Serialize(Model.Input.ParticipantIds.Select(x => x?.ToString() ?? string.Empty).ToList());
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Add Registration Entry</h1>
+    <p>Create an individual or team competition registration entry for manual admin override.</p>
+    <p class="app-required-legend"><span class="app-required">*</span> Mandatory field</p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createRegistrationEntryForm">
+        <input asp-for="Input.EntryType" type="hidden" id="entryTypeHidden" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.CompetitionCategoryId" class="form-label">Competition category <span class="app-required">*</span></label>
+                <select asp-for="Input.CompetitionCategoryId" asp-items="Model.Options.CompetitionCategoryOptions" class="form-select" id="competitionCategorySelect" required></select>
+                <span asp-validation-for="Input.CompetitionCategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.TeamId" class="form-label">Team <span class="app-required">*</span></label>
+                <select asp-for="Input.TeamId" asp-items="Model.Options.TeamOptions" class="form-select" id="teamSelect" required></select>
+                <span asp-validation-for="Input.TeamId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Entry type</label>
+                <input type="text" class="form-control" id="entryTypeDisplay" value="Select category first" readonly />
+                <div class="form-text">Derived from the selected competition category.</div>
+                <span asp-validation-for="Input.EntryType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.EntryStatus" class="form-label">Entry status <span class="app-required">*</span></label>
+                <select asp-for="Input.EntryStatus" asp-items="Model.Options.EntryStatusOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.EntryStatus" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Active</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label">Active entry</label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.EntryName" class="form-label">Entry name</label>
+                <input asp-for="Input.EntryName" class="form-control" maxlength="200" />
+                <span asp-validation-for="Input.EntryName" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.RejectedReason" class="form-label">Rejected reason</label>
+                <textarea asp-for="Input.RejectedReason" class="form-control" rows="3"></textarea>
+                <div class="form-text">Required only when status is REJECTED.</div>
+                <span asp-validation-for="Input.RejectedReason" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <h2 class="mt-2 mb-0">Participants</h2>
+                <p class="text-muted mb-0" id="participantHelpText">Select a competition category and team to show participant fields.</p>
+            </div>
+
+            <div class="col-12">
+                <div class="row g-3" id="participantFieldsContainer"></div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label">Notes</label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-4 mb-0">
+            This admin page is for manual overrides. The future Team Manager workspace will provide the bulk registration experience.
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelCreateRegistrationEntryModal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetCreateRegistrationEntryModal">Reset</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Entry</button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createRegistrationEntryResultModal" tabindex="-1" aria-labelledby="createRegistrationEntryResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createRegistrationEntryResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">@Model.ResultMessage</p>
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/RegistrationEntries/Index">View All Entries</a>
+                    @if (resultIsSuccess && Model.CreatedRegistrationEntryId.HasValue)
+                    {
+                        <a class="btn btn-primary" asp-page="/Admin/RegistrationEntries/Details" asp-route-id="@Model.CreatedRegistrationEntryId">View Entry</a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay, I’ll fix it</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateRegistrationEntryModal" tabindex="-1" aria-labelledby="resetCreateRegistrationEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateRegistrationEntryModalLabel">Reset form?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">This will clear all entered registration entry details and return the form to its default state.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Keep editing</button>
+                <button type="button" class="btn btn-danger" id="confirmResetButton">Reset form</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateRegistrationEntryModal" tabindex="-1" aria-labelledby="cancelCreateRegistrationEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateRegistrationEntryModalLabel">Cancel creating entry?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Any details entered on this page will not be saved.</div>
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/RegistrationEntries/Index">Cancel creating entry</a>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Stay here</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const categoryMetadata = @Html.Raw(categoryMetadataJson);
+            const participantMetadata = @Html.Raw(participantMetadataJson);
+            const selectedParticipantIds = @Html.Raw(selectedParticipantIdsJson);
+
+            const form = document.getElementById("createRegistrationEntryForm");
+            const categorySelect = document.getElementById("competitionCategorySelect");
+            const teamSelect = document.getElementById("teamSelect");
+            const entryTypeHidden = document.getElementById("entryTypeHidden");
+            const entryTypeDisplay = document.getElementById("entryTypeDisplay");
+            const participantHelpText = document.getElementById("participantHelpText");
+            const participantFieldsContainer = document.getElementById("participantFieldsContainer");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function getSelectedCategory() {
+                return categoryMetadata.find(category => category.Id === categorySelect?.value);
+            }
+
+            function getEligibleParticipants(category, teamId) {
+                if (!category || !teamId) return [];
+
+                return participantMetadata.filter(participant => {
+                    const sameTeam = participant.TeamId === teamId;
+                    const sameYear = participant.CompetitionYearId === category.CompetitionYearId;
+                    const tahapAllowed = category.EventType === "TEAM" || participant.TahapCode === category.CategoryCode;
+                    return sameTeam && sameYear && tahapAllowed;
+                });
+            }
+
+            function renderParticipantFields() {
+                const category = getSelectedCategory();
+                const teamId = teamSelect?.value || "";
+                const requiredCount = category?.RequiredParticipantCount || 0;
+                const eligibleParticipants = getEligibleParticipants(category, teamId);
+
+                entryTypeHidden.value = category?.EventType || "";
+                entryTypeDisplay.value = category?.EventType || "Select category first";
+                participantFieldsContainer.innerHTML = "";
+
+                if (!category) {
+                    participantHelpText.textContent = "Select a competition category and team to show participant fields.";
+                    return;
+                }
+
+                if (!teamId) {
+                    participantHelpText.textContent = "Select a team to show eligible participants.";
+                    return;
+                }
+
+                if (requiredCount <= 0) {
+                    participantHelpText.textContent = "Selected category does not have a valid participant/team size configured.";
+                    return;
+                }
+
+                participantHelpText.textContent = category.EventType === "INDIVIDUAL"
+                    ? "This individual category requires exactly 1 participant."
+                    : `This team category requires exactly ${requiredCount} participant(s).`;
+
+                for (let index = 0; index < requiredCount; index++) {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "col-md-4";
+
+                    const label = document.createElement("label");
+                    label.className = "form-label";
+                    label.setAttribute("for", `participant-${index}`);
+                    label.innerHTML = `Participant ${index + 1} <span class=\"app-required\">*</span>`;
+
+                    const select = document.createElement("select");
+                    select.className = "form-select";
+                    select.id = `participant-${index}`;
+                    select.name = `Input.ParticipantIds[${index}]`;
+                    select.required = true;
+
+                    const emptyOption = document.createElement("option");
+                    emptyOption.value = "";
+                    emptyOption.textContent = eligibleParticipants.length === 0 ? "No active participants found" : "Select participant...";
+                    select.appendChild(emptyOption);
+
+                    for (const participant of eligibleParticipants) {
+                        const option = document.createElement("option");
+                        option.value = participant.Id;
+                        option.textContent = participant.DisplayText;
+                        if (selectedParticipantIds[index] === participant.Id) option.selected = true;
+                        select.appendChild(option);
+                    }
+
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(select);
+                    participantFieldsContainer.appendChild(wrapper);
+                }
+            }
+
+            categorySelect?.addEventListener("change", () => {
+                selectedParticipantIds.length = 0;
+                renderParticipantFields();
+            });
+            teamSelect?.addEventListener("change", () => {
+                selectedParticipantIds.length = 0;
+                renderParticipantFields();
+            });
+
+            confirmResetButton?.addEventListener("click", () => {
+                form?.reset();
+                selectedParticipantIds.length = 0;
+                renderParticipantFields();
+                bootstrap.Modal.getInstance(document.getElementById("resetCreateRegistrationEntryModal"))?.hide();
+            });
+
+            renderParticipantFields();
+        })();
+    </script>
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createRegistrationEntryResultModal");
+                if (modalElement) new bootstrap.Modal(modalElement).show();
+            });
+        </script>
+    }
+}

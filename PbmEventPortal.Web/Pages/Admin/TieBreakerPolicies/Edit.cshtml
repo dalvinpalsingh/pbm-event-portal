@@ -1,0 +1,363 @@
+@page "{id:guid}"
+@using System.Text.Json
+@model PbmEventPortal.Web.Pages.Admin.TieBreakerPolicies.EditModel
+@{
+    ViewData["Title"] = "Edit Tie-Breaker Policy";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+
+    var rulesJson = JsonSerializer.Serialize(
+        Model.Input.Rules,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+    var ruleCodeOptionsJson = JsonSerializer.Serialize(
+        Model.RuleCodeOptions,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+    var sortDirectionOptionsJson = JsonSerializer.Serialize(
+        Model.SortDirectionOptions,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Tie-Breaker Policy</h1>
+    <p>
+        Update policy details, active status, and tie-breaker rule settings.
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editTieBreakerPolicyForm">
+        <input type="hidden" asp-for="Input.Id" />
+        <input type="hidden" asp-for="Input.CompetitionYearId" />
+        <input type="hidden" asp-for="Input.CompetitionYearNo" />
+        <input type="hidden" asp-for="Input.CompetitionYearDisplayName" />
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Competition year</label>
+                <input type="text" class="form-control" value="@Model.Input.CompetitionYearDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.PolicyName" class="form-label">
+                    Policy name <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.PolicyName" class="form-control" maxlength="100" required />
+                <span asp-validation-for="Input.PolicyName" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.AppliesTo" class="form-label">
+                    Applies to <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.AppliesTo" asp-items="Model.AppliesToOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.AppliesTo" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Tie-Breaker Rules</h2>
+                    <p class="text-muted mb-0">
+                        Rule count and priority rows are fixed for V1. Update rule, sort direction, and active status only.
+                    </p>
+                </div>
+
+                <div class="row g-3" id="tieBreakerRulesContainer"></div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelEditTieBreakerPolicyModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetEditTieBreakerPolicyModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Tie-Breaker Policy
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editTieBreakerPolicyResultModal" tabindex="-1" aria-labelledby="editTieBreakerPolicyResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editTieBreakerPolicyResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/TieBreakerPolicies/Index">
+                        View All Tie-Breaker Policies
+                    </a>
+
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditTieBreakerPolicyModal" tabindex="-1" aria-labelledby="resetEditTieBreakerPolicyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditTieBreakerPolicyModalLabel">
+                        Reset changes?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will reset the tie-breaker policy fields back to the last loaded values.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditTieBreakerPolicyModal" tabindex="-1" aria-labelledby="cancelEditTieBreakerPolicyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditTieBreakerPolicyModalLabel">
+                        Cancel editing tie-breaker policy?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any unsaved changes on this page will be lost.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger"
+                   asp-page="/Admin/TieBreakerPolicies/Details"
+                   asp-route-id="@Model.Input.Id">
+                    Cancel editing
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const rules = @Html.Raw(rulesJson);
+            const ruleCodeOptions = @Html.Raw(ruleCodeOptionsJson);
+            const sortDirectionOptions = @Html.Raw(sortDirectionOptionsJson);
+            const form = document.getElementById("editTieBreakerPolicyForm");
+            const container = document.getElementById("tieBreakerRulesContainer");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function buildOptions(options, selectedValue) {
+                return options.map((option) => {
+                    const selected = option.value === selectedValue ? " selected" : "";
+                    return `<option value="${option.value}"${selected}>${option.text}</option>`;
+                }).join("");
+            }
+
+            function createRuleColumn(rule) {
+                const column = document.createElement("div");
+                column.className = "col-12 col-md-6 col-xl-4";
+                column.dataset.tieBreakerRuleColumn = "true";
+
+                column.innerHTML = `
+                    <div class="scoring-criterion-box h-100">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Priority</label>
+                                <input type="number" class="form-control" data-priority-no-input readonly />
+                                <input type="hidden" data-id-input />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Rule <span class="app-required">*</span></label>
+                                <select class="form-select" data-rule-code-input required>
+                                    ${buildOptions(ruleCodeOptions, rule.ruleCode)}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Sort direction <span class="app-required">*</span></label>
+                                <select class="form-select" data-sort-direction-input required>
+                                    ${buildOptions(sortDirectionOptions, rule.sortDirection)}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" data-is-active-input value="true" />
+                                    <input type="hidden" data-is-active-hidden-input value="false" />
+                                    <label class="form-check-label">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                column.querySelector("[data-id-input]").value = rule.id;
+                column.querySelector("[data-priority-no-input]").value = rule.priorityNo;
+                column.querySelector("[data-is-active-input]").checked = rule.isActive ?? true;
+
+                return column;
+            }
+
+            function getRuleColumns() {
+                return Array.from(container?.querySelectorAll("[data-tie-breaker-rule-column]") ?? []);
+            }
+
+            function nameInputs() {
+                getRuleColumns().forEach((column, index) => {
+                    column.querySelector("[data-id-input]").name = `Input.Rules[${index}].Id`;
+                    column.querySelector("[data-priority-no-input]").name = `Input.Rules[${index}].PriorityNo`;
+                    column.querySelector("[data-rule-code-input]").name = `Input.Rules[${index}].RuleCode`;
+                    column.querySelector("[data-sort-direction-input]").name = `Input.Rules[${index}].SortDirection`;
+                    column.querySelector("[data-is-active-input]").name = `Input.Rules[${index}].IsActive`;
+                    column.querySelector("[data-is-active-hidden-input]").name = `Input.Rules[${index}].IsActive`;
+                });
+            }
+
+            function renderRules() {
+                if (!container) {
+                    return;
+                }
+
+                container.innerHTML = "";
+
+                rules.forEach((rule) => {
+                    container.appendChild(createRuleColumn(rule));
+                });
+
+                nameInputs();
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+                renderRules();
+
+                const resetModalElement = document.getElementById("resetEditTieBreakerPolicyModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+
+            renderRules();
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editTieBreakerPolicyResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

@@ -1,0 +1,80 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.Admin.CompetitionYears.IndexModel
+@{
+    ViewData["Title"] = "Competition Years";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>Competition Years</h1>
+    <p>
+        Manage PBM event years, registration windows, and setup progress.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/CompetitionYears/Create">
+            Create Competition Year
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.CompetitionYears.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No competition years have been created yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Display Name</th>
+                        <th>Registration Window</th>
+                        <th>Competitions</th>
+                        <th>Participants</th>
+                        <th>Venues</th>
+                        <th>Schedule Items</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var competitionYear in Model.CompetitionYears)
+                    {
+                        <tr>
+                            <td>
+                                <span class="app-pill">@competitionYear.YearNo</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@competitionYear.DisplayName</div>
+                            </td>
+                            <td>@competitionYear.RegistrationWindowDisplay</td>
+                            <td>@competitionYear.CompetitionCount</td>
+                            <td>@competitionYear.ParticipantCount</td>
+                            <td>@competitionYear.VenueCount</td>
+                            <td>@competitionYear.ScheduleItemCount</td>
+                            <td>
+                                <span class="app-pill">@competitionYear.StatusDisplay</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/CompetitionYears/Details"
+                                   asp-route-id="@competitionYear.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

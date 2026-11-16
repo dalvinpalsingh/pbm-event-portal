@@ -1,0 +1,76 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.CompetitionScoringCriteria.IndexModel
+@{
+    ViewData["Title"] = "Scoring Criteria";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Scoring Criteria</h1>
+    <p>
+        Manage competition scoring criteria used for judging, score sheets, and results calculation.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/CompetitionScoringCriteria/Create">
+            Add Scoring Criteria
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.ScoringCriteria.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No scoring criteria have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Competition</th>
+                        <th>Type</th>
+                        <th>Criteria</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.ScoringCriteria)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@item.CompetitionDisplay</div>
+                                <div class="text-muted small">@item.CompetitionYearNo · @item.CompetitionCode</div>
+                            </td>
+                            <td>@item.CompetitionTypeDisplay</td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var criterion in item.Criteria)
+                                    {
+                                        <span class="app-pill @(criterion.IsActive ? string.Empty : "app-pill-danger")">
+                                            @criterion.CriterionNameDisplay
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/CompetitionScoringCriteria/Details"
+                                   asp-route-id="@item.CompetitionId">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

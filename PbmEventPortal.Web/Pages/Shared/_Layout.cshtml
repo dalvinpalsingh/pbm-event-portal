@@ -1,0 +1,231 @@
+@using Microsoft.EntityFrameworkCore
+@using PbmEventPortal.Data.NpgSQL
+@inject PbmDbContext DbContext
+@{
+    var currentPage = ViewContext.RouteData.Values["page"]?.ToString();
+    var pageTitle = ViewData["Title"] as string;
+    var fullTitle = string.IsNullOrWhiteSpace(pageTitle)
+        ? "PBM Event Portal"
+        : $"{pageTitle} - PBM Event Portal";
+
+    var isSignedIn = User.Identity?.IsAuthenticated == true;
+    var isSystemAdmin = User.IsInRole("SYSTEM_ADMIN");
+    var isTeamManager = User.IsInRole("TEAM_MANAGER");
+    var isScoreVerifier = User.IsInRole("SCORE_VERIFIER");
+    var isJudge = User.IsInRole("JUDGE");
+    var isScoringPage = currentPage?.StartsWith("/Admin/ScoreVerification") == true;
+    var isAdminPage = currentPage?.StartsWith("/Admin") == true && !isScoringPage;
+    var isTeamManagementPage = currentPage?.StartsWith("/TeamManagement") == true;
+    var canOpenAnyWorkspace = isSystemAdmin || isTeamManager || isScoreVerifier || isJudge;
+    var userDisplayName = User.Identity?.Name?.Trim() ?? "";
+    var userInitial = string.IsNullOrWhiteSpace(userDisplayName)
+        ? "U"
+        : userDisplayName[..1].ToUpperInvariant();
+    Guid? assignedTeamId = null;
+
+    if (isSignedIn && isTeamManager && !isSystemAdmin)
+    {
+        var currentUserIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(currentUserIdValue, out var currentUserId))
+        {
+            assignedTeamId = await DbContext.UserRoleAssignments
+                .AsNoTracking()
+                .Where(roleAssignment =>
+                    roleAssignment.UserId == currentUserId &&
+                    roleAssignment.RoleCode == "TEAM_MANAGER" &&
+                    roleAssignment.IsActive &&
+                    roleAssignment.IsVerified &&
+                    roleAssignment.TeamId != null &&
+                    roleAssignment.Team != null &&
+                    roleAssignment.Team.IsActive)
+                .Select(roleAssignment => roleAssignment.TeamId)
+                .FirstOrDefaultAsync();
+        }
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@fullTitle</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/global/site.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="app-sidebar" id="appSidebar" aria-label="Primary navigation">
+            <div class="app-sidebar-header">
+                <button type="button"
+                        class="app-sidebar-toggle"
+                        id="appSidebarToggle"
+                        data-app-sidebar-toggle="true"
+                        aria-controls="appSidebar"
+                        aria-expanded="false"
+                        aria-label="Expand sidebar">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+
+                <a class="app-sidebar-brand" asp-area="" asp-page="/Index" title="PBM Event Portal">
+                    <span class="app-sidebar-brand-mark">PBM</span>
+                    <span class="app-sidebar-label">PBM Event Portal</span>
+                </a>
+            </div>
+
+            <nav class="app-sidebar-nav">
+                <a class="app-sidebar-link @(currentPage == "/Index" ? "active" : "")"
+                   asp-area=""
+                   asp-page="/Index"
+                   title="Home">
+                    <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                    <span class="app-sidebar-label">Home</span>
+                </a>
+
+                @if (isSystemAdmin)
+                {
+                    <a class="app-sidebar-link @(isAdminPage ? "active" : "")"
+                       asp-area=""
+                       asp-page="/Admin/Index"
+                       title="Admin">
+                        <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Admin</span>
+                    </a>
+                }
+
+                @if (isSignedIn && canOpenAnyWorkspace)
+                {
+                    <button type="button"
+                            class="app-sidebar-link app-sidebar-link-disabled"
+                            disabled
+                            title="Event Management">
+                        <i class="bi bi-calendar-event-fill" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Event Management</span>
+                        <span class="app-sidebar-status">Soon</span>
+                    </button>
+                }
+
+                @if (isSystemAdmin || isTeamManager)
+                {
+                    @if (assignedTeamId.HasValue && !isSystemAdmin)
+                    {
+                        <a class="app-sidebar-link @(isTeamManagementPage ? "active" : "")"
+                           asp-area=""
+                           asp-page="/TeamManagement/TeamManagement"
+                           asp-route-teamId="@assignedTeamId.Value"
+                           data-app-loading="Loading team workspace..."
+                           title="Team Management">
+                            <i class="bi bi-people-fill" aria-hidden="true"></i>
+                            <span class="app-sidebar-label">Team Management</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="app-sidebar-link @(isTeamManagementPage ? "active" : "")"
+                           asp-area=""
+                           asp-page="/TeamManagement/TeamManagement"
+                           data-app-loading="Loading team workspace..."
+                           title="Team Management">
+                            <i class="bi bi-people-fill" aria-hidden="true"></i>
+                            <span class="app-sidebar-label">Team Management</span>
+                        </a>
+                    }
+                }
+
+                @if (isSystemAdmin || isJudge)
+                {
+                    <button type="button"
+                            class="app-sidebar-link app-sidebar-link-disabled"
+                            disabled
+                            title="Judging">
+                        <i class="bi bi-clipboard2-check-fill" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Judging</span>
+                        <span class="app-sidebar-status">Soon</span>
+                    </button>
+                }
+
+                @if (isSystemAdmin)
+                {
+                    <a class="app-sidebar-link @(isScoringPage ? "active" : "")"
+                       asp-area=""
+                       asp-page="/Admin/ScoreVerification/Index"
+                       title="Scoring">
+                        <i class="bi bi-check2-square" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Scoring</span>
+                    </a>
+                }
+            </nav>
+
+            <div class="app-sidebar-footer">
+                @if (isSignedIn)
+                {
+                    <a class="app-sidebar-profile @(currentPage == "/Account/Profile" ? "active" : "")"
+                       asp-page="/Account/Profile"
+                       title="View profile">
+                        <span class="app-sidebar-avatar" aria-hidden="true">
+                            @userInitial
+                        </span>
+                        <span class="app-sidebar-profile-text">
+                            <span class="app-sidebar-profile-name">@userDisplayName</span>
+                            <span class="app-sidebar-profile-action">View profile</span>
+                        </span>
+                    </a>
+
+                    <a class="app-sidebar-link app-sidebar-link-danger"
+                       asp-page="/Logout"
+                       title="Logout">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Logout</span>
+                    </a>
+                }
+                else
+                {
+                    <a class="app-sidebar-link @(currentPage == "/Login" ? "active" : "")"
+                       asp-page="/Login"
+                       title="Login">
+                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                        <span class="app-sidebar-label">Login</span>
+                    </a>
+                }
+            </div>
+        </aside>
+
+        <div class="app-content">
+            <main class="app-main">
+                <div class="container">
+                    @RenderBody()
+                </div>
+            </main>
+
+            <footer class="app-footer border-top">
+                <div class="container">
+                    <span>PBM Event Portal</span>
+                    <span class="text-muted">Local development build</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <div class="app-loading-overlay d-none" id="appLoadingOverlay" role="status" aria-live="polite" aria-hidden="true">
+        <div class="app-loading-card shadow-lg">
+            <div class="spinner-border text-primary" aria-hidden="true"></div>
+            <div>
+                <div class="fw-semibold" id="appLoadingMessage">Loading...</div>
+                <div class="text-muted small">Please wait.</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/global/form-helpers.js" asp-append-version="true"></script>
+    <script src="~/js/global/profile.js" asp-append-version="true"></script>
+    <script src="~/js/global/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

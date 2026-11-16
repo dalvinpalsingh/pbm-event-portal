@@ -1,0 +1,58 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-5">
+        <div class="app-page-header text-center">
+            <p class="app-eyebrow">Authentication</p>
+            <h1>Login</h1>
+            <p>
+                Sign in to access the PBM Event Portal.
+            </p>
+        </div>
+
+        <div class="app-card">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="app-alert app-alert-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label"></label>
+                    <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.Password" class="form-label"></label>
+
+                    <div class="app-password-input-wrap">
+                        <input asp-for="Input.Password" class="form-control app-password-input" autocomplete="current-password" />
+                        <button type="button"
+                                class="app-password-toggle"
+                                data-password-toggle-for="Input_Password"
+                                aria-label="Hold to show password">
+                            <i class="bi bi-eye-slash" data-password-toggle-icon aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="Input.RememberMe" class="form-check-input" />
+                    <label asp-for="Input.RememberMe" class="form-check-label"></label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

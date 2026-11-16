@@ -1,0 +1,320 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.Participants.CreateModel
+@{
+    ViewData["Title"] = "Add Participant";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Add Participant</h1>
+    <p>Create a participant profile linked to a competition year, team, and Tahap.</p>
+    <p class="app-required-legend"><span class="app-required">*</span> Mandatory field</p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createParticipantForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.CompetitionYearId" class="form-label">Competition year <span class="app-required">*</span></label>
+                <select asp-for="Input.CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.CompetitionYearId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.TeamId" class="form-label">Team <span class="app-required">*</span></label>
+                <select asp-for="Input.TeamId" asp-items="Model.TeamOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.TeamId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.TahapCode" class="form-label">Tahap <span class="app-required">*</span></label>
+                <select asp-for="Input.TahapCode" asp-items="Model.TahapOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.TahapCode" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.FullNameAsPerId" class="form-label">Full name as per ID <span class="app-required">*</span></label>
+                <input asp-for="Input.FullNameAsPerId" class="form-control" maxlength="200" required />
+                <span asp-validation-for="Input.FullNameAsPerId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.FullNameGurmukhi" class="form-label">Full name in Gurmukhi <span class="app-required">*</span></label>
+                <input asp-for="Input.FullNameGurmukhi" class="form-control" maxlength="200" required />
+                <span asp-validation-for="Input.FullNameGurmukhi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.IdType" class="form-label">ID type <span class="app-required">*</span></label>
+                <select asp-for="Input.IdType" class="form-select" id="idTypeSelect" required>
+                    <option value="NRIC">NRIC</option>
+                    <option value="PASSPORT">Passport</option>
+                </select>
+                <span asp-validation-for="Input.IdType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4" data-id-section="nric">
+                <label asp-for="Input.NricNumberDisplay" class="form-label">NRIC number <span class="app-required">*</span></label>
+                <input asp-for="Input.NricNumberDisplay" class="form-control" id="nricInput" maxlength="14" placeholder="990101-01-0101" inputmode="numeric" />
+                <span asp-validation-for="Input.NricNumberDisplay" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" data-id-section="passport">
+                <label asp-for="Input.PassportNumber" class="form-label">Passport number <span class="app-required">*</span></label>
+                <input asp-for="Input.PassportNumber" class="form-control" maxlength="20" />
+                <span asp-validation-for="Input.PassportNumber" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" data-id-section="passport">
+                <label asp-for="Input.PassportExpiryDate" class="form-label">Passport expiry date <span class="app-required">*</span></label>
+                <input asp-for="Input.PassportExpiryDate" class="form-control" type="date" />
+                <span asp-validation-for="Input.PassportExpiryDate" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Mobile number</label>
+                <div class="app-phone-control">
+                    <input type="hidden" asp-for="Input.MobileCountryCode" id="mobileCountryCodeInput" />
+                    <input type="hidden" asp-for="Input.MobileNumber" id="mobileFullNumberInput" />
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary app-phone-country-button dropdown-toggle" type="button" id="mobileCountryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span id="selectedCountryFlag">🇲🇾</span>
+                            <span id="selectedCountryCode">+60</span>
+                        </button>
+                        <div class="dropdown-menu app-phone-country-menu" aria-labelledby="mobileCountryDropdown">
+                            <div class="px-2 pb-2"><input type="search" class="form-control form-control-sm" id="countrySearchInput" placeholder="Search country..." /></div>
+                            <div id="countryOptions"></div>
+                        </div>
+                    </div>
+                    <input asp-for="Input.MobileLocalNumber" class="form-control" id="mobileLocalNumberInput" inputmode="numeric" placeholder="123456789" />
+                </div>
+                <div id="mobilePreview" class="app-field-feedback text-muted">My number is +60...</div>
+                <span asp-validation-for="Input.MobileLocalNumber" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.Email" class="form-label">Email address</label>
+                <input asp-for="Input.Email" class="form-control" id="emailInput" maxlength="256" />
+                <div id="emailFeedback" class="app-field-feedback"></div>
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Gender <span class="app-required">*</span></label>
+                <input type="hidden" asp-for="Input.Gender" id="genderHidden" />
+                <select class="form-select" id="genderSelect" required>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                </select>
+                <span asp-validation-for="Input.Gender" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.DateOfBirth" class="form-label">Date of birth <span class="app-required">*</span></label>
+                <input asp-for="Input.DateOfBirth" class="form-control" id="dateOfBirthInput" type="date" required />
+                <span asp-validation-for="Input.DateOfBirth" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.ParentGuardianName" class="form-label">Parent / guardian name <span class="app-required">*</span></label>
+                <input asp-for="Input.ParentGuardianName" class="form-control" maxlength="200" required />
+                <span asp-validation-for="Input.ParentGuardianName" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Parent / guardian mobile <span class="app-required">*</span></label>
+                <div class="app-phone-control">
+                    <input type="hidden" asp-for="Input.ParentGuardianMobileCountryCode" id="guardianCountryCodeInput" />
+                    <input type="hidden" asp-for="Input.ParentGuardianMobile" id="guardianFullNumberInput" />
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary app-phone-country-button dropdown-toggle" type="button" id="guardianCountryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span id="guardianSelectedCountryFlag">🇲🇾</span>
+                            <span id="guardianSelectedCountryCode">+60</span>
+                        </button>
+                        <div class="dropdown-menu app-phone-country-menu" aria-labelledby="guardianCountryDropdown">
+                            <div class="px-2 pb-2"><input type="search" class="form-control form-control-sm" id="guardianCountrySearchInput" placeholder="Search country..." /></div>
+                            <div id="guardianCountryOptions"></div>
+                        </div>
+                    </div>
+                    <input asp-for="Input.ParentGuardianMobileLocalNumber" class="form-control" id="guardianLocalNumberInput" inputmode="numeric" placeholder="123456789" required />
+                </div>
+                <div id="guardianMobilePreview" class="app-field-feedback text-muted">My number is +60...</div>
+                <span asp-validation-for="Input.ParentGuardianMobileLocalNumber" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelCreateParticipantModal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetCreateParticipantModal">Reset</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Participant</button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createParticipantResultModal" tabindex="-1" aria-labelledby="createParticipantResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createParticipantResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">@Model.ResultMessage</p>
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/Participants/Index">View All Participants</a>
+                    @if (resultIsSuccess && Model.CreatedParticipantId.HasValue)
+                    {
+                        <a class="btn btn-primary" asp-page="/Admin/Participants/Details" asp-route-id="@Model.CreatedParticipantId">View Participant</a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay, I’ll fix it</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateParticipantModal" tabindex="-1" aria-labelledby="resetCreateParticipantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateParticipantModalLabel">Reset form?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">This will clear all entered participant details and return the form to its default state.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Keep editing</button>
+                <button type="button" class="btn btn-danger" id="confirmResetButton">Reset form</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateParticipantModal" tabindex="-1" aria-labelledby="cancelCreateParticipantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateParticipantModalLabel">Cancel adding participant?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Any details entered on this page will not be saved.</div>
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/Participants/Index">Cancel adding participant</a>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Stay here</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("createParticipantForm");
+            const identityFields = window.ProfileHelpers.setupIdentityFields({
+                idTypeSelectId: "idTypeSelect",
+                nricInputId: "nricInput",
+                genderHiddenId: "genderHidden",
+                genderSelectId: "genderSelect",
+                dateOfBirthInputId: "dateOfBirthInput"
+            });
+
+            const mobileControl = window.ProfileHelpers.setupPhoneControl({
+                countryCodeInputId: "mobileCountryCodeInput",
+                fullNumberInputId: "mobileFullNumberInput",
+                localNumberInputId: "mobileLocalNumberInput",
+                selectedCountryFlagId: "selectedCountryFlag",
+                selectedCountryCodeId: "selectedCountryCode",
+                searchInputId: "countrySearchInput",
+                optionsContainerId: "countryOptions",
+                previewId: "mobilePreview"
+            });
+
+            const guardianMobileControl = window.ProfileHelpers.setupPhoneControl({
+                countryCodeInputId: "guardianCountryCodeInput",
+                fullNumberInputId: "guardianFullNumberInput",
+                localNumberInputId: "guardianLocalNumberInput",
+                selectedCountryFlagId: "guardianSelectedCountryFlag",
+                selectedCountryCodeId: "guardianSelectedCountryCode",
+                searchInputId: "guardianCountrySearchInput",
+                optionsContainerId: "guardianCountryOptions",
+                previewId: "guardianMobilePreview"
+            });
+
+            const emailFeedback = window.ProfileHelpers.setupEmailFeedback({
+                emailInputId: "emailInput",
+                feedbackId: "emailFeedback"
+            });
+
+            document.getElementById("confirmResetButton")?.addEventListener("click", () => {
+                form?.reset();
+                identityFields.resetCreateDefaults();
+                mobileControl.reset();
+                guardianMobileControl.reset();
+                emailFeedback.reset();
+                window.FormHelpers.clearValidationMessages(form);
+                bootstrap.Modal.getInstance(document.getElementById("resetCreateParticipantModal"))?.hide();
+            });
+
+            form?.addEventListener("submit", () => {
+                identityFields.update();
+                mobileControl.update();
+                guardianMobileControl.update();
+                emailFeedback.update();
+            });
+        })();
+    </script>
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createParticipantResultModal");
+                if (modalElement) new bootstrap.Modal(modalElement).show();
+            });
+        </script>
+    }
+}

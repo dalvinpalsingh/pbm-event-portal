@@ -1,0 +1,159 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.WinnersList.IndexModel
+@{
+    ViewData["Title"] = "Winners List";
+}
+
+<style>
+    .best-participant-row-top {
+        outline: 2px solid rgba(25, 135, 84, 0.45);
+        outline-offset: -2px;
+        background: rgba(25, 135, 84, 0.055);
+    }
+
+    .best-participant-row-tied-top {
+        outline: 2px solid rgba(255, 193, 7, 0.7);
+        outline-offset: -2px;
+        background: rgba(255, 193, 7, 0.11);
+    }
+</style>
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Results</p>
+    <h1>Winners List</h1>
+    <p>
+        View finalized competition winners and overall Tahap standings for the selected competition year.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+    </div>
+</div>
+
+<form method="post" id="winnersAntiForgeryForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="app-card mb-3" data-winners-list-page="true">
+    <div class="row g-3 align-items-end">
+        <div class="col-12">
+            <label asp-for="CompetitionYearId" class="form-label">Competition year</label>
+            <select asp-for="CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" id="competitionYearSelect">
+                <option value="">Select competition year...</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div id="winnersEmptySelection" class="app-card @(Model.CompetitionYearId.HasValue ? "d-none" : string.Empty)">
+    <p class="text-muted mb-0">Select a competition year to view the winners list.</p>
+</div>
+
+<div id="winnersWorkspace" class="@(Model.CompetitionYearId.HasValue ? string.Empty : "d-none")">
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="app-card h-100">
+                <div class="text-muted small">Competition Year</div>
+                <div class="fw-semibold" id="workspaceCompetitionYearDisplay">@Model.Workspace.CompetitionYearDisplay</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-card h-100 border border-success bg-success-subtle">
+                <div class="text-muted small">Completed Competition Results</div>
+                <div class="display-6 fw-semibold" id="completedCompetitionResultCount">@Model.Workspace.CompletedCompetitionResultCount</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-card h-100 border border-warning bg-warning-subtle">
+                <div class="text-muted small">Pending Competition Results</div>
+                <div class="display-6 fw-semibold" id="pendingCompetitionResultCount">@Model.Workspace.PendingCompetitionResultCount</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="app-card h-100">
+                <div class="text-muted small">Overall Standings</div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge" id="overallStatusBadge">@Model.Workspace.OverallStatus</span>
+                    <span class="fw-semibold" id="overallCurrentRowCount">@Model.Workspace.OverallCurrentRowCount rows</span>
+                </div>
+                <div class="text-muted small mt-2" id="lastOverallGeneratedAt">Last generated: @Model.Workspace.LastOverallGeneratedAt</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h2 class="mb-1">Competition Winners</h2>
+                <p class="mb-0 text-muted">Top winners from completed competition/category result calculations.</p>
+            </div>
+        </div>
+
+        <div id="competitionWinnersList"></div>
+    </div>
+
+    <div class="app-card">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h2 class="mb-1">Best Participants per Tahap</h2>
+                <p class="mb-0 text-muted">Top 5 participants per Tahap, aggregated from current completed competition results.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="generateOverallStandingsButton">
+                Generate Overall Standings
+            </button>
+        </div>
+
+        <div class="border rounded-3 p-3 mb-3 bg-light">
+            <div class="fw-semibold mb-1">Ranking rule</div>
+            <div class="text-muted small" id="tieBreakerRuleDisplay">@Model.Workspace.TieBreakerRuleDisplay</div>
+            <div class="d-flex flex-wrap gap-2 mt-2 small">
+                <span><span class="badge bg-success-subtle text-success border border-success-subtle">Green outline</span> clear highest points</span>
+                <span><span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Amber outline</span> tied highest points, ranked by tie-breaker</span>
+            </div>
+        </div>
+
+        <div id="overallTahapWinnersList"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="generateOverallStandingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-body text-center p-4">
+                <div class="app-result-modal-icon mb-3">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                <h2 class="h4 mb-2">Generate overall standings?</h2>
+                <p class="mb-3" id="generateOverallStandingsModalText"></p>
+                <p class="text-muted small mb-4">
+                    This saves the current Best Participants per Tahap snapshot using completed competition results only. Existing current overall rows for this year will become historical.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmGenerateOverallStandingsButton">Generate Overall Standings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="winnersResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal" id="winnersResultModalContent">
+            <div class="modal-body text-center p-4">
+                <div class="app-result-modal-icon mb-3">
+                    <i class="bi" id="winnersResultModalIcon"></i>
+                </div>
+                <h2 class="h4 mb-2" id="winnersResultModalTitle">Load failed</h2>
+                <p class="mb-4" id="winnersResultModalMessage"></p>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin/winners-list.js" asp-append-version="true"></script>
+}

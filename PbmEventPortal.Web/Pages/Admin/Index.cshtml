@@ -1,0 +1,314 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin Area";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>Admin Area</h1>
+    <p>
+        Manage PBM Event Portal setup, users, roles, and system checks.
+    </p>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>User Profiles</h2>
+            <p>
+                View registered user profiles, contact details, audit information, and assigned roles.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/UserProfiles/Index">
+                Open User Profiles
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Database Check</h2>
+            <p>
+                Check the current PostgreSQL database connection and basic application database health.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/DbCheck/DbCheck">
+                Open DB Check
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Roles & Access</h2>
+            <p>
+                Review role and access management features as they are added to the portal.
+            </p>
+
+            <button type="button" class="btn btn-outline-secondary" disabled>
+                Coming Soon
+            </button>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Teams</h2>
+            <p>
+                Manage participating Punjabi Education Centres, regions, states, and Team Managers.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/Teams/Index">
+                Open Teams
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Participants</h2>
+            <p>
+                Manage participant profiles, IDs, teams, Tahap groups, guardian details, and registration status.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/Participants/Index">
+                Open Participants
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Registration Entries</h2>
+            <p>
+                Manage individual and team competition registration entries for manual admin overrides.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/RegistrationEntries/Index">
+                Open Registration Entries
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Team Composition Patterns</h2>
+            <p>
+                Manage allowed Tahap slot patterns and younger substitution rules for team registrations.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/TeamCompositionPatterns/Index">
+                Open Team Composition Patterns
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Competition Years</h2>
+            <p>
+                Manage PBM event years, registration windows, and setup progress.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/CompetitionYears/Index">
+                Open Competition Years
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Competitions</h2>
+            <p>
+                Manage PBM competitions, judge requirements, winner counts, categories, and scoring criteria.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/Competitions/Index">
+                Open Competitions
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Competition Categories</h2>
+            <p>
+                Configure competition category rules, quotas, team sizes, substitutions, and winner counts.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/CompetitionCategories/Index">
+                Open Competition Categories
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Scoring Criteria</h2>
+            <p>
+                Configure scoring criteria used for judging, score sheets, and results calculation.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/CompetitionScoringCriteria/Index">
+                Open Scoring Criteria
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Score Sheets</h2>
+            <p>
+                Open competition/category score sheets, enter scores, and review scoring progress.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/ScoreSheets/Index">
+                Open Score Sheets
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Score Verification</h2>
+            <p>
+                Review post-submit score changes and verify pending score override updates.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/ScoreVerification/Index">
+                Open Score Verification
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Points Schemes</h2>
+            <p>
+                Review placing points used for winner rankings, score summaries, and overall results calculation.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/PointsSchemes/Index">
+                Open Points Schemes
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Points Scheme Settings</h2>
+            <p>
+                Set the event-level default points scheme and optional competition-level scheme overrides.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/PointsSchemeSettings/Index">
+                Open Points Scheme Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Results Calculation</h2>
+            <p>
+                Preview verified score sheet rankings, resolved points schemes, and participant-level awarded points.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/ResultsCalculation/Index">
+                Open Results Calculation
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Winners List</h2>
+            <p>
+                View finalized competition winners and overall Tahap standings for each competition year.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/WinnersList/Index">
+                Open Winners List
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Tie-Breaker Policies</h2>
+            <p>
+                Review tie-breaker rules used when scores or points are tied during results calculation.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/TieBreakerPolicies/Index">
+                Open Tie-Breaker Policies
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Venues</h2>
+            <p>
+                Manage rooms, halls, and event spaces used for PBM schedules and activities.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/Venues/Index">
+                Open Venues
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Schedule Items</h2>
+            <p>
+                Manage event schedule rows for registration, competitions, meals, ceremonies, and general activities.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/ScheduleItems/Index">
+                Open Schedule Items
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Judge Assignments</h2>
+            <p>
+                Assign judges to competition categories, optional schedule sessions, and optional scoring criteria.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/JudgeAssignments/Index">
+                Open Judge Assignments
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Judge Conflicts</h2>
+            <p>
+                Track judge conflicts by team, participant, competition category, or custom notes.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Admin/JudgeConflicts/Index">
+                Open Judge Conflicts
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+        <div class="app-card h-100">
+            <h2>Audit Logs</h2>
+            <p>
+                Review system activity, authentication events, and business changes later.
+            </p>
+
+            <button type="button" class="btn btn-outline-secondary" disabled>
+                Coming Soon
+            </button>
+        </div>
+    </div>
+</div>

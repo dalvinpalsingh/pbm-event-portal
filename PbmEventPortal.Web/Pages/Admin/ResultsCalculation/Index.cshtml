@@ -1,0 +1,584 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.ResultsCalculation.IndexModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Results Calculation";
+    var workspaceJson = JsonSerializer.Serialize(Model.Workspace, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    });
+}
+
+<style>
+    .result-filter-card {
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .result-filter-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.08);
+    }
+
+    .result-filter-card.is-selected {
+        border-width: 2px !important;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18), 0 0.75rem 1.75rem rgba(15, 23, 42, 0.08);
+    }
+
+    .result-filter-card.is-selected[data-result-filter="completed"] {
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18), 0 0.75rem 1.75rem rgba(15, 23, 42, 0.08);
+    }
+
+    .result-filter-card.is-selected[data-result-filter="pending"] {
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.28), 0 0.75rem 1.75rem rgba(15, 23, 42, 0.08);
+    }
+
+    .result-score-sheet-card {
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .result-score-sheet-card.is-fading-out {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+</style>
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Results</p>
+    <h1>Results Calculation</h1>
+    <p>
+        Preview competition/category winners and participant points from verified score sheets before calculating official results.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+    </div>
+</div>
+
+<form method="post" id="resultsAntiForgeryForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+@if (Model.ResultIsSuccess.HasValue)
+{
+    var modalClass = Model.ResultIsSuccess.Value ? "app-result-modal-success" : "app-result-modal-danger";
+    var iconClass = Model.ResultIsSuccess.Value ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalClass">
+                <div class="modal-body text-center p-4">
+                    <div class="app-result-modal-icon mb-3">
+                        <i class="bi @iconClass"></i>
+                    </div>
+                    <h2 class="h4 mb-2">@Model.ResultTitle</h2>
+                    <p class="mb-4">@Model.ResultMessage</p>
+                    <a class="btn btn-primary" asp-page="/Admin/ResultsCalculation/Index" asp-route-competitionYearId="@Model.CompetitionYearId">
+                        Continue
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<div class="app-card mb-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-12">
+            <label asp-for="CompetitionYearId" class="form-label">Competition year</label>
+            <select asp-for="CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" id="competitionYearSelect">
+                <option value="">Select competition year...</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div id="resultsEmptySelection" class="app-card @(Model.CompetitionYearId.HasValue ? "d-none" : string.Empty)">
+    <p class="text-muted mb-0">Select a competition year to preview result calculation readiness.</p>
+</div>
+
+<div id="resultsWorkspace" class="@(Model.CompetitionYearId.HasValue ? string.Empty : "d-none")">
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="app-card h-100">
+                <div class="text-muted small">Competition Year</div>
+                <div class="fw-semibold" id="workspaceCompetitionYearDisplay">@Model.Workspace.CompetitionYearDisplay</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="app-card h-100 w-100 text-start border border-primary bg-primary-subtle result-filter-card is-selected" data-result-filter="all" aria-pressed="true">
+                <div class="text-muted small">All Score Sheets</div>
+                <div class="display-6 fw-semibold" id="workspaceVerifiedSheetCount">@Model.Workspace.VerifiedSheetCount</div>
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="app-card h-100 w-100 text-start border border-success bg-success-subtle result-filter-card" data-result-filter="completed" aria-pressed="false">
+                <div class="text-muted small">Calculated &amp; Completed</div>
+                <div class="display-6 fw-semibold" id="workspaceCurrentResultCount">@Model.Workspace.CurrentResultCount</div>
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="app-card h-100 w-100 text-start border border-warning bg-warning-subtle result-filter-card" data-result-filter="pending" aria-pressed="false">
+                <div class="text-muted small">Pending Calculation &amp; Completion</div>
+                <div class="display-6 fw-semibold" id="workspaceNeedsActionCount">@Model.Workspace.NeedsActionCount</div>
+            </button>
+        </div>
+    </div>
+
+    <div id="emptyScoreSheetsMessage" class="app-card d-none">
+        <p class="text-muted mb-0" id="emptyScoreSheetsText">No current VERIFIED score sheets found for this competition year.</p>
+    </div>
+
+    <div id="scoreSheetPreviewList"></div>
+</div>
+
+<div class="modal fade" id="calculateScoreSheetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-body text-center p-4">
+                <div class="app-result-modal-icon mb-3">
+                    <i class="bi bi-calculator-fill"></i>
+                </div>
+                <h2 class="h4 mb-2">Calculate &amp; complete?</h2>
+                <p class="mb-3" id="calculateScoreSheetModalText"></p>
+                <p class="text-muted small mb-4">
+                    This will create official result rows for this score sheet only. Other score sheets will not be recalculated.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmCalculateScoreSheetButton">Calculate &amp; Complete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="calculateResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal" id="calculateResultModalContent">
+            <div class="modal-body text-center p-4">
+                <div class="app-result-modal-icon mb-3">
+                    <i class="bi" id="calculateResultModalIcon"></i>
+                </div>
+                <h2 class="h4 mb-2" id="calculateResultModalTitle"></h2>
+                <p class="mb-4" id="calculateResultModalMessage"></p>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentWorkspace = @Html.Raw(workspaceJson);
+        let currentResultFilter = "all";
+        let selectedScoreSheet = null;
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function pointsLabel(points) {
+            return Number(points) === 1 ? "point" : "points";
+        }
+
+        function formatWholeScore(value) {
+            const number = Number(value ?? 0);
+            return Number.isInteger(number) ? String(number) : number.toFixed(2);
+        }
+
+        function isCompletedSheet(sheet) {
+            return sheet?.isCompleted === true || sheet?.resultStatus === "Calculated/current";
+        }
+
+        function getAntiForgeryToken() {
+            return document.querySelector('#resultsAntiForgeryForm input[name="__RequestVerificationToken"]')?.value ?? "";
+        }
+
+        function getFilteredSheets(workspace) {
+            const sheets = [...(workspace?.sheets ?? [])];
+            const sortedSheets = sheets.sort((left, right) => {
+                const leftCompleted = isCompletedSheet(left);
+                const rightCompleted = isCompletedSheet(right);
+
+                if (leftCompleted !== rightCompleted) {
+                    return leftCompleted ? 1 : -1;
+                }
+
+                return `${left.competitionCode}|${left.categoryCode}`.localeCompare(`${right.competitionCode}|${right.categoryCode}`);
+            });
+
+            if (currentResultFilter === "completed") {
+                return sortedSheets.filter(isCompletedSheet);
+            }
+
+            if (currentResultFilter === "pending") {
+                return sortedSheets.filter(sheet => !isCompletedSheet(sheet));
+            }
+
+            return sortedSheets;
+        }
+
+        function getEmptyMessage() {
+            if (currentResultFilter === "completed") {
+                return "No calculated and completed score sheets found for this competition year.";
+            }
+
+            if (currentResultFilter === "pending") {
+                return "No score sheets are pending calculation and completion for this competition year.";
+            }
+
+            return "No current VERIFIED score sheets found for this competition year.";
+        }
+
+        function setSelectedFilter(filterName) {
+            currentResultFilter = filterName || "all";
+
+            document.querySelectorAll(".result-filter-card").forEach(card => {
+                const isSelected = card.dataset.resultFilter === currentResultFilter;
+                card.classList.toggle("is-selected", isSelected);
+                card.setAttribute("aria-pressed", isSelected ? "true" : "false");
+            });
+        }
+
+        function buildPointsSchemePopoverHtml(sheet) {
+            const rows = sheet.pointRows ?? [];
+            const rowHtml = rows.length === 0
+                ? `<div class="text-muted small">No allocation rows</div>`
+                : rows.map(item => `
+                    <div class="d-flex justify-content-between gap-3 mb-1">
+                        <span>${escapeHtml(item.placingDisplay)}</span>
+                        <span class="fw-semibold text-nowrap">${item.pointsAwarded} ${pointsLabel(item.pointsAwarded)}</span>
+                    </div>
+                `).join("");
+
+            const winnerText = Number(sheet.winnerCount ?? 0) > 0
+                ? `Points awarded to Top ${sheet.winnerCount}:`
+                : "No winner count configured.";
+
+            return `
+                <div class="results-points-popover-content">
+                    <div class="fw-semibold mb-2">${escapeHtml(sheet.pointsSchemeName)}</div>
+                    <div class="small text-muted mb-2">${escapeHtml(winnerText)}</div>
+                    <div class="results-points-popover-list">${rowHtml}</div>
+                </div>
+            `;
+        }
+
+        function buildParticipantNamesHtml(participants, fallbackSummary) {
+            if (!participants || participants.length === 0) {
+                return `<span class="text-muted">${escapeHtml(fallbackSummary || "No active participants")}</span>`;
+            }
+
+            return participants.map(participant => `
+                <div>${escapeHtml(participant.participantName)}</div>
+            `).join("");
+        }
+
+        function buildRankingRowsHtml(rows) {
+            if (!rows || rows.length === 0) {
+                return `<tr><td colspan="6" class="text-muted">No active score entries found.</td></tr>`;
+            }
+
+            return rows.map(row => `
+                <tr>
+                    <td class="text-center text-nowrap align-middle"><span class="fw-semibold">${row.rankNo}</span></td>
+                    <td class="align-middle">
+                        ${buildParticipantNamesHtml(row.participants, row.participantSummary)}
+                    </td>
+                    <td class="align-middle">
+                        <div class="fw-semibold">${escapeHtml(row.teamCode)}</div>
+                        <div class="text-muted small">${escapeHtml(row.teamName)}</div>
+                    </td>
+                    <td class="text-center text-nowrap align-middle">
+                        <div class="fw-semibold">${formatWholeScore(row.entryTotalScore)}</div>
+                    </td>
+                    <td class="text-center text-nowrap align-middle">
+                        ${row.hasPendingVerification
+                            ? `<span class="badge bg-secondary">Pending</span>`
+                            : `<span class="badge bg-success">${row.pointsAwarded} ${pointsLabel(row.pointsAwarded)}</span>`}
+                    </td>
+                    <td class="text-center text-nowrap align-middle">
+                        ${row.hasPendingVerification
+                            ? `<span class="badge bg-warning text-dark">Pending verification</span>`
+                            : `<span class="app-pill">Awarded</span>`}
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function buildSheetHeaderActionHtml(sheet) {
+            if (isCompletedSheet(sheet)) {
+                return `
+                    <div class="text-end">
+                        <span class="badge bg-success mb-2">Completed</span>
+                        ${sheet.lastCalculatedAt ? `<div class="text-muted small">Calculated: ${escapeHtml(sheet.lastCalculatedAt)}</div>` : ""}
+                    </div>
+                `;
+            }
+
+            if (sheet.isCalculationReady) {
+                return `
+                    <div class="text-end">
+                        <button type="button"
+                                class="btn btn-primary btn-sm calculate-score-sheet-button"
+                                data-score-sheet-id="${escapeHtml(sheet.scoreSheetId)}">
+                            Calculate &amp; Complete
+                        </button>
+                        <div class="text-muted small mt-2">Ready for result calculation</div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="text-end">
+                    <span class="badge bg-warning text-dark mb-2">Pending completion</span>
+                    <div class="text-muted small">Resolve pending items first</div>
+                </div>
+            `;
+        }
+
+        function buildPointsHeaderHtml(sheet) {
+            return `
+                <span>Points</span>
+                <button type="button"
+                        class="btn btn-link btn-sm p-0 ms-1 align-baseline results-points-info-button"
+                        data-score-sheet-id="${escapeHtml(sheet.scoreSheetId)}"
+                        aria-label="Show points scheme"
+                        title="Points scheme">
+                    <i class="bi bi-info-circle-fill"></i>
+                </button>
+            `;
+        }
+
+        function buildSheetCardHtml(sheet) {
+            return `
+                <div class="app-card mb-3 result-score-sheet-card" id="scoreSheetCard_${escapeHtml(sheet.scoreSheetId)}">
+                    <div class="row g-3 align-items-start mb-3">
+                        <div class="col-lg-5">
+                            <div class="text-muted small">${escapeHtml(sheet.competitionCode)} • ${escapeHtml(sheet.categoryCode)}</div>
+                            <h2 class="mb-1">${escapeHtml(sheet.competitionName)}</h2>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="app-pill">${escapeHtml(sheet.eventType)}</span>
+                                <span class="badge bg-success">VERIFIED</span>
+                                <span class="badge ${escapeHtml(sheet.resultStatusClass)}">${escapeHtml(sheet.resultStatus)}</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="text-muted small">Score sheet</div>
+                            <div class="fw-semibold">Version ${sheet.versionNo}</div>
+                            <div class="text-muted small">Verified: ${escapeHtml(sheet.verifiedAt)}</div>
+                        </div>
+                        <div class="col-lg-3">
+                            ${buildSheetHeaderActionHtml(sheet)}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4"><div class="border rounded-3 p-3 h-100"><div class="text-muted small">Entries</div><div class="fw-semibold">${sheet.entryCount}</div></div></div>
+                        <div class="col-md-4"><div class="border rounded-3 p-3 h-100"><div class="text-muted small">Pending Verification</div><div class="fw-semibold">${sheet.pendingVerificationCount}</div></div></div>
+                        <div class="col-md-4"><div class="border rounded-3 p-3 h-100"><div class="text-muted small">Awarded Entries</div><div class="fw-semibold">${sheet.awardedEntryCount}</div></div></div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle" style="table-layout: fixed;">
+                            <colgroup>
+                                <col style="width: 4.5rem;" />
+                                <col style="width: 36%;" />
+                                <col style="width: 34%;" />
+                                <col style="width: 7.5rem;" />
+                                <col style="width: 7rem;" />
+                                <col style="width: 9rem;" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Rank</th>
+                                    <th>Participant(s)</th>
+                                    <th>Team</th>
+                                    <th class="text-center">Total Score</th>
+                                    <th class="text-center text-nowrap">${buildPointsHeaderHtml(sheet)}</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildRankingRowsHtml(sheet.rows)}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initializeResultsPointsPopovers() {
+            document.querySelectorAll(".results-points-info-button").forEach(button => {
+                const existing = bootstrap.Popover.getInstance(button);
+                if (existing) {
+                    existing.dispose();
+                }
+
+                const scoreSheetId = button.dataset.scoreSheetId;
+                const sheet = (currentWorkspace?.sheets ?? []).find(item => item.scoreSheetId === scoreSheetId);
+
+                new bootstrap.Popover(button, {
+                    container: "body",
+                    html: true,
+                    sanitize: false,
+                    trigger: "focus",
+                    placement: "left",
+                    customClass: "results-points-popover",
+                    title: "Points scheme",
+                    content: sheet ? buildPointsSchemePopoverHtml(sheet) : "No points scheme found."
+                });
+            });
+        }
+
+        function wireScoreSheetButtons() {
+            document.querySelectorAll(".calculate-score-sheet-button").forEach(button => {
+                button.addEventListener("click", () => {
+                    const scoreSheetId = button.dataset.scoreSheetId;
+                    selectedScoreSheet = (currentWorkspace?.sheets ?? []).find(sheet => sheet.scoreSheetId === scoreSheetId);
+                    if (!selectedScoreSheet) return;
+
+                    document.getElementById("calculateScoreSheetModalText").textContent =
+                        `${selectedScoreSheet.competitionName} / ${selectedScoreSheet.categoryCode}`;
+
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById("calculateScoreSheetModal")).show();
+                });
+            });
+        }
+
+        function renderWorkspace(workspace) {
+            const hasYear = Boolean(workspace?.competitionYearId && workspace.competitionYearId !== "00000000-0000-0000-0000-000000000000");
+            document.getElementById("resultsEmptySelection")?.classList.toggle("d-none", hasYear);
+            document.getElementById("resultsWorkspace")?.classList.toggle("d-none", !hasYear);
+            setSelectedFilter(currentResultFilter);
+
+            if (!hasYear) return;
+
+            document.getElementById("workspaceCompetitionYearDisplay").textContent = workspace.competitionYearDisplay ?? "";
+            document.getElementById("workspaceVerifiedSheetCount").textContent = String(workspace.verifiedSheetCount ?? 0);
+            document.getElementById("workspaceCurrentResultCount").textContent = String(workspace.currentResultCount ?? 0);
+            document.getElementById("workspaceNeedsActionCount").textContent = String(workspace.needsActionCount ?? 0);
+
+            const sheets = getFilteredSheets(workspace);
+            document.getElementById("emptyScoreSheetsText").textContent = getEmptyMessage();
+            document.getElementById("emptyScoreSheetsMessage")?.classList.toggle("d-none", sheets.length > 0);
+            document.getElementById("scoreSheetPreviewList").innerHTML = sheets.map(buildSheetCardHtml).join("");
+            wireScoreSheetButtons();
+            initializeResultsPointsPopovers();
+        }
+
+        async function loadCompetitionYearPreview(competitionYearId, resetFilter = true) {
+            if (!competitionYearId) {
+                renderWorkspace(null);
+                return;
+            }
+
+            const response = await fetch(`?handler=YearPreview&competitionYearId=${encodeURIComponent(competitionYearId)}`, {
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to load results calculation preview.");
+            }
+
+            currentWorkspace = await response.json();
+            if (resetFilter) currentResultFilter = "all";
+            renderWorkspace(currentWorkspace);
+        }
+
+        function showResultModal(isSuccess, title, message) {
+            const content = document.getElementById("calculateResultModalContent");
+            const icon = document.getElementById("calculateResultModalIcon");
+
+            content.classList.remove("app-result-modal-success", "app-result-modal-danger");
+            content.classList.add(isSuccess ? "app-result-modal-success" : "app-result-modal-danger");
+
+            icon.className = "bi " + (isSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill");
+            document.getElementById("calculateResultModalTitle").textContent = title;
+            document.getElementById("calculateResultModalMessage").textContent = message;
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("calculateResultModal")).show();
+        }
+
+        async function calculateSelectedScoreSheet() {
+            if (!selectedScoreSheet) return;
+
+            const confirmButton = document.getElementById("confirmCalculateScoreSheetButton");
+            confirmButton.disabled = true;
+            confirmButton.textContent = "Calculating...";
+
+            try {
+                const body = new URLSearchParams();
+                body.append("scoreSheetId", selectedScoreSheet.scoreSheetId);
+
+                const response = await fetch("?handler=CalculateScoreSheetResult", {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "RequestVerificationToken": getAntiForgeryToken()
+                    },
+                    body: body.toString()
+                });
+
+                const result = await response.json().catch(() => ({
+                    success: false,
+                    title: "Calculate failed",
+                    message: "The result calculation response could not be read."
+                }));
+
+                if (!response.ok || !result.success) {
+                    showResultModal(false, result.title || "Calculate failed", result.message || "The selected score sheet could not be calculated.");
+                    return;
+                }
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("calculateScoreSheetModal")).hide();
+
+                const selectedYearId = document.getElementById("competitionYearSelect")?.value;
+                const card = document.getElementById(`scoreSheetCard_${selectedScoreSheet.scoreSheetId}`);
+
+                if (currentResultFilter === "pending" && card) {
+                    card.classList.add("is-fading-out");
+                    await new Promise(resolve => setTimeout(resolve, 260));
+                }
+
+                await loadCompetitionYearPreview(selectedYearId, false);
+                showResultModal(true, result.title || "Results completed", result.message || "The selected score sheet has been calculated and completed.");
+            } catch (error) {
+                showResultModal(false, "Calculate failed", error.message || "The selected score sheet could not be calculated.");
+            } finally {
+                confirmButton.disabled = false;
+                confirmButton.textContent = "Calculate & Complete";
+                selectedScoreSheet = null;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderWorkspace(currentWorkspace);
+
+            document.querySelectorAll(".result-filter-card").forEach(card => {
+                card.addEventListener("click", () => {
+                    setSelectedFilter(card.dataset.resultFilter || "all");
+                    renderWorkspace(currentWorkspace);
+                });
+            });
+
+            document.getElementById("confirmCalculateScoreSheetButton")?.addEventListener("click", calculateSelectedScoreSheet);
+
+            document.getElementById("competitionYearSelect")?.addEventListener("change", async event => {
+                try {
+                    await loadCompetitionYearPreview(event.target.value, true);
+                } catch (error) {
+                    showResultModal(false, "Load failed", error.message);
+                }
+            });
+        });
+    </script>
+}

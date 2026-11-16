@@ -1,0 +1,119 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.TeamCompositionPatterns.DetailsModel
+@{
+    ViewData["Title"] = "Team Composition Pattern Details";
+    var pattern = Model.TeamCompositionPattern!;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Team Composition Pattern Details</h1>
+    <p>Review team composition pattern details, Tahap slots, substitution rule, and audit information.</p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/TeamCompositionPatterns/Index">
+            Back to Team Composition Patterns
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/TeamCompositionPatterns/Edit" asp-route-id="@pattern.Id">
+            Edit Pattern
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="app-card">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Competition year</div>
+                    <div class="fw-semibold">@pattern.CompetitionYearDisplay</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Competition</div>
+                    <div class="fw-semibold">@pattern.CompetitionDisplay</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Category</div>
+                    <span class="app-pill">@pattern.CategoryDisplay</span>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Team size</div>
+                    <div class="fw-semibold">@pattern.TeamSize</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small">Pattern code</div>
+                    <div class="fw-semibold">@pattern.PatternCode</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Younger substitution</div>
+                    <div class="fw-semibold">@pattern.YoungerSubstitutionDisplay</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Status</div>
+                    <span class="app-pill @(pattern.IsActive ? string.Empty : "app-pill-danger")">@pattern.StatusDisplay</span>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted small">Notes</div>
+                    <div>@pattern.NotesDisplay</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-3">
+            <h2>Slots</h2>
+            @if (pattern.Slots.Count == 0)
+            {
+                <p class="text-muted mb-0">No slots configured.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table app-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Slot</th>
+                                <th>Tahap</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var slot in pattern.Slots)
+                            {
+                                <tr>
+                                    <td>@slot.SlotNo</td>
+                                    <td>@slot.TahapDisplay</td>
+                                    <td>
+                                        <span class="app-pill @(slot.IsActive ? string.Empty : "app-pill-danger")">@slot.StatusDisplay</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="app-card mt-3">
+            <h2>Audit information</h2>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-muted small">Created at</div>
+                    <div>@pattern.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Created by</div>
+                    <div>@pattern.CreatedByDisplay</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Updated at</div>
+                    <div>@(pattern.UpdatedAt.HasValue ? pattern.UpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "Not updated yet")</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Updated by</div>
+                    <div>@pattern.UpdatedByDisplay</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

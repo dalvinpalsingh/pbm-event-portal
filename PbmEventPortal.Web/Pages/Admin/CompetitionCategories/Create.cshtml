@@ -1,0 +1,560 @@
+@page
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@model PbmEventPortal.Web.Pages.Admin.CompetitionCategories.CreateModel
+@{
+    ViewData["Title"] = "Add Competition Category";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+
+    var existingCompetitionCategoryLinksJson = JsonSerializer.Serialize(
+        Model.ExistingCompetitionCategoryLinks,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Add Competition Category</h1>
+    <p>
+        Link a category to a competition and configure category-level participation and winner rules.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createCompetitionCategoryForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.CompetitionId" class="form-label">
+                    Competition <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.CompetitionId" class="form-select" id="competitionSelect" required>
+                    <option value="">Select competition...</option>
+                    @foreach (var competition in Model.CompetitionOptions)
+                    {
+                        <option value="@competition.Id"
+                                data-event-type="@competition.EventType"
+                                data-event-type-display="@competition.EventTypeDisplay">
+                            @competition.DisplayName
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="Input.CompetitionId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="eventTypeDisplayInput">Event type</label>
+                <input type="text"
+                       class="form-control"
+                       id="eventTypeDisplayInput"
+                       value=""
+                       disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.CategoryCode" class="form-label">
+                    Category <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.CategoryCode" class="form-select" id="categorySelect" required>
+                    <option value="">Select category...</option>
+                    @foreach (var category in Model.CategoryOptions)
+                    {
+                        <option value="@category.Code" data-sort-order="@category.SortOrder">
+                            @category.DisplayName
+                        </option>
+                    }
+                </select>
+                <div class="form-text d-none" id="noAvailableCategoriesHelpText">
+                    All categories have already been configured for this competition.
+                </div>
+                <span asp-validation-for="Input.CategoryCode" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="sortOrderDisplayInput">Sort order</label>
+                <input type="number"
+                       class="form-control"
+                       id="sortOrderDisplayInput"
+                       value=""
+                       disabled />
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.WinnerCount" class="form-label">
+                    Winner count <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.WinnerCount"
+                       class="form-control"
+                       id="winnerCountInput"
+                       min="1"
+                       max="@Model.IndividualMaxWinnerCount"
+                       required />
+                <div class="form-text" id="winnerCountHelpText">
+                    Maximum winners: @Model.IndividualMaxWinnerCount
+                </div>
+                <span asp-validation-for="Input.WinnerCount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4" id="individualMaxParticipantsSection">
+                <label class="form-label" for="individualMaxParticipantsDisplayInput">Max participants per team</label>
+                <input type="number"
+                       class="form-control"
+                       id="individualMaxParticipantsDisplayInput"
+                       value="@Model.IndividualDefaultMaxParticipantsPerTeam"
+                       disabled />
+            </div>
+
+            <div class="col-md-4 d-none" id="teamSizeSection">
+                <label asp-for="Input.TeamEventTeamSize" class="form-label">
+                    Team size <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventTeamSize" asp-items="Model.TeamSizeOptions" class="form-select" id="teamSizeSelect"></select>
+                <span asp-validation-for="Input.TeamEventTeamSize" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" id="teamGenderRestrictionSection">
+                <label asp-for="Input.TeamEventGenderRestrictions" class="form-label">
+                    Team gender restrictions <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventGenderRestrictions" class="form-select" id="teamGenderRestrictionSelect">
+                    <option value="">Select gender restriction...</option>
+                    @foreach (var option in Model.TeamGenderRestrictionOptions)
+                    {
+                        <option value="@option.Code" data-requires-team-size="@(option.Code == "ONE_BOY_ONE_GIRL" ? "2" : "")">
+                            @option.DisplayName
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="Input.TeamEventGenderRestrictions" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" id="youngerSubstitutionSection">
+                <label asp-for="Input.TeamEventYoungerSubstitutionAllowed" class="form-label">
+                    Younger substitution allowed <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventYoungerSubstitutionAllowed" class="form-select" id="youngerSubstitutionSelect">
+                    <option value="">Select...</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+                <span asp-validation-for="Input.TeamEventYoungerSubstitutionAllowed" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label"></label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelCreateCompetitionCategoryModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetCreateCompetitionCategoryModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitCompetitionCategoryButton">
+                Add Competition Category
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createCompetitionCategoryResultModal" tabindex="-1" aria-labelledby="createCompetitionCategoryResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createCompetitionCategoryResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/CompetitionCategories/Index">
+                        View All Competition Categories
+                    </a>
+
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateCompetitionCategoryModal" tabindex="-1" aria-labelledby="resetCreateCompetitionCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateCompetitionCategoryModalLabel">
+                        Reset form?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will clear all entered competition category details and return the form to its default state.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateCompetitionCategoryModal" tabindex="-1" aria-labelledby="cancelCreateCompetitionCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateCompetitionCategoryModalLabel">
+                        Cancel adding competition category?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any details entered on this page will not be saved.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/CompetitionCategories/Index">
+                    Cancel adding category
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const individualEventType = "INDIVIDUAL";
+            const teamEventType = "TEAM";
+            const teamGenderOneBoyOneGirl = "ONE_BOY_ONE_GIRL";
+
+            const individualMaxWinnerCount = @Model.IndividualMaxWinnerCount;
+            const teamMaxWinnerCount = @Model.TeamMaxWinnerCount;
+            const existingCompetitionCategoryLinks = @Html.Raw(existingCompetitionCategoryLinksJson);
+
+            const form = document.getElementById("createCompetitionCategoryForm");
+            const competitionSelect = document.getElementById("competitionSelect");
+            const eventTypeDisplayInput = document.getElementById("eventTypeDisplayInput");
+            const categorySelect = document.getElementById("categorySelect");
+            const noAvailableCategoriesHelpText = document.getElementById("noAvailableCategoriesHelpText");
+            const sortOrderDisplayInput = document.getElementById("sortOrderDisplayInput");
+            const winnerCountInput = document.getElementById("winnerCountInput");
+            const winnerCountHelpText = document.getElementById("winnerCountHelpText");
+            const individualMaxParticipantsSection = document.getElementById("individualMaxParticipantsSection");
+            const teamSizeSection = document.getElementById("teamSizeSection");
+            const teamSizeSelect = document.getElementById("teamSizeSelect");
+            const teamGenderRestrictionSection = document.getElementById("teamGenderRestrictionSection");
+            const teamGenderRestrictionSelect = document.getElementById("teamGenderRestrictionSelect");
+            const youngerSubstitutionSection = document.getElementById("youngerSubstitutionSection");
+            const youngerSubstitutionSelect = document.getElementById("youngerSubstitutionSelect");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+            const submitCompetitionCategoryButton = document.getElementById("submitCompetitionCategoryButton");
+
+            function getSelectedCompetitionId() {
+                return competitionSelect?.value ?? "";
+            }
+
+            function getSelectedEventType() {
+                const selectedOption = competitionSelect?.selectedOptions?.[0];
+                return selectedOption?.dataset?.eventType ?? "";
+            }
+
+            function getSelectedEventTypeDisplay() {
+                const selectedOption = competitionSelect?.selectedOptions?.[0];
+                return selectedOption?.dataset?.eventTypeDisplay ?? "";
+            }
+
+            function getSelectedSortOrder() {
+                const selectedOption = categorySelect?.selectedOptions?.[0];
+                return selectedOption?.dataset?.sortOrder ?? "";
+            }
+
+            function isCategoryAlreadyLinked(competitionId, categoryCode) {
+                if (!competitionId || !categoryCode) {
+                    return false;
+                }
+
+                return existingCompetitionCategoryLinks.some((link) =>
+                    link.competitionId.toLowerCase() === competitionId.toLowerCase() &&
+                    link.categoryCode === categoryCode);
+            }
+
+            function updateAvailableCategories() {
+                if (!categorySelect) {
+                    return;
+                }
+
+                const selectedCompetitionId = getSelectedCompetitionId();
+                let visibleCategoryCount = 0;
+
+                Array.from(categorySelect.options).forEach((option) => {
+                    if (!option.value) {
+                        option.hidden = false;
+                        option.disabled = false;
+                        return;
+                    }
+
+                    const alreadyLinked = isCategoryAlreadyLinked(selectedCompetitionId, option.value);
+                    option.hidden = alreadyLinked;
+                    option.disabled = alreadyLinked;
+
+                    if (!alreadyLinked) {
+                        visibleCategoryCount += 1;
+                    }
+                });
+
+                if (categorySelect.selectedOptions.length > 0 && categorySelect.selectedOptions[0].disabled) {
+                    categorySelect.value = "";
+                }
+
+                const hasSelectedCompetition = Boolean(selectedCompetitionId);
+                const hasAvailableCategories = visibleCategoryCount > 0 || !hasSelectedCompetition;
+
+                noAvailableCategoriesHelpText?.classList.toggle("d-none", hasAvailableCategories);
+
+                if (submitCompetitionCategoryButton) {
+                    submitCompetitionCategoryButton.disabled = hasSelectedCompetition && visibleCategoryCount === 0;
+                }
+            }
+
+            function setTeamFieldsEnabled(enabled) {
+                if (teamSizeSelect) {
+                    teamSizeSelect.disabled = !enabled;
+                    teamSizeSelect.required = enabled;
+                }
+
+                if (teamGenderRestrictionSelect) {
+                    teamGenderRestrictionSelect.disabled = !enabled;
+                    teamGenderRestrictionSelect.required = enabled;
+                }
+
+                if (youngerSubstitutionSelect) {
+                    youngerSubstitutionSelect.disabled = !enabled;
+                    youngerSubstitutionSelect.required = enabled;
+                }
+            }
+
+            function resetTeamFields() {
+                if (teamSizeSelect) {
+                    teamSizeSelect.value = "";
+                }
+
+                if (teamGenderRestrictionSelect) {
+                    teamGenderRestrictionSelect.value = "";
+                }
+
+                if (youngerSubstitutionSelect) {
+                    youngerSubstitutionSelect.value = "";
+                }
+            }
+
+            function updateOneBoyOneGirlVisibility() {
+                if (!teamGenderRestrictionSelect || !teamSizeSelect) {
+                    return;
+                }
+
+                const teamSize = teamSizeSelect.value;
+
+                Array.from(teamGenderRestrictionSelect.options).forEach((option) => {
+                    if (option.value !== teamGenderOneBoyOneGirl) {
+                        return;
+                    }
+
+                    option.hidden = teamSize !== "2";
+                    option.disabled = teamSize !== "2";
+
+                    if (teamGenderRestrictionSelect.value === teamGenderOneBoyOneGirl && teamSize !== "2") {
+                        teamGenderRestrictionSelect.value = "";
+                    }
+                });
+            }
+
+            function updateEventTypeSections() {
+                const eventType = getSelectedEventType();
+                const eventTypeDisplay = getSelectedEventTypeDisplay();
+                const isTeamEvent = eventType === teamEventType;
+                const maxWinnerCount = isTeamEvent ? teamMaxWinnerCount : individualMaxWinnerCount;
+
+                if (eventTypeDisplayInput) {
+                    eventTypeDisplayInput.value = eventTypeDisplay;
+                }
+
+                if (winnerCountInput) {
+                    winnerCountInput.max = maxWinnerCount.toString();
+
+                    if (Number(winnerCountInput.value) > maxWinnerCount) {
+                        winnerCountInput.value = maxWinnerCount.toString();
+                    }
+                }
+
+                if (winnerCountHelpText) {
+                    winnerCountHelpText.textContent = `Maximum winners: ${maxWinnerCount}`;
+                }
+
+                individualMaxParticipantsSection?.classList.toggle("d-none", eventType !== individualEventType);
+                teamSizeSection?.classList.toggle("d-none", !isTeamEvent);
+                teamGenderRestrictionSection?.classList.toggle("d-none", !isTeamEvent);
+                youngerSubstitutionSection?.classList.toggle("d-none", !isTeamEvent);
+
+                setTeamFieldsEnabled(isTeamEvent);
+
+                if (!isTeamEvent) {
+                    resetTeamFields();
+                }
+
+                updateOneBoyOneGirlVisibility();
+            }
+
+            function updateSortOrderDisplay() {
+                if (!sortOrderDisplayInput) {
+                    return;
+                }
+
+                sortOrderDisplayInput.value = getSelectedSortOrder();
+            }
+
+            function clearValidationMessages() {
+                document.querySelectorAll(".field-validation-error, .field-validation-valid").forEach((element) => {
+                    element.textContent = "";
+                });
+
+                document.querySelectorAll(".input-validation-error").forEach((element) => {
+                    element.classList.remove("input-validation-error");
+                });
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+                clearValidationMessages();
+                updateAvailableCategories();
+                updateEventTypeSections();
+                updateSortOrderDisplay();
+
+                const resetModalElement = document.getElementById("resetCreateCompetitionCategoryModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            competitionSelect?.addEventListener("change", () => {
+                updateAvailableCategories();
+                updateEventTypeSections();
+                updateSortOrderDisplay();
+            });
+            categorySelect?.addEventListener("change", updateSortOrderDisplay);
+            teamSizeSelect?.addEventListener("change", updateOneBoyOneGirlVisibility);
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+
+            updateAvailableCategories();
+            updateEventTypeSections();
+            updateSortOrderDisplay();
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createCompetitionCategoryResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

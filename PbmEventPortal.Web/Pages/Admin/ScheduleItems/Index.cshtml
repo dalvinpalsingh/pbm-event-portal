@@ -1,0 +1,81 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.ScheduleItems.IndexModel
+@{
+    ViewData["Title"] = "Schedule Items";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Schedule Items</h1>
+    <p>
+        Manage event schedule rows for registration, competitions, meals, ceremonies, and general activities.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/ScheduleItems/Create">
+            Add Schedule Item
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.ScheduleItems.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No schedule items have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Competition / Category</th>
+                        <th>Venue</th>
+                        <th>Status</th>
+                        <th>Published</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var scheduleItem in Model.ScheduleItems)
+                    {
+                        <tr>
+                            <td>@scheduleItem.DateDisplay</td>
+                            <td>@scheduleItem.TimeDisplay</td>
+                            <td>
+                                <div class="fw-semibold">@scheduleItem.DisplayTitle</div>
+                                <div class="text-muted small">@scheduleItem.CompetitionYearDisplay</div>
+                            </td>
+                            <td>@scheduleItem.ScheduleTypeDisplay</td>
+                            <td>@scheduleItem.CompetitionCategoryDisplay</td>
+                            <td>@scheduleItem.VenueDisplay</td>
+                            <td><span class="app-pill">@scheduleItem.StatusDisplay</span></td>
+                            <td>
+                                <span class="app-pill @(scheduleItem.IsPublished ? string.Empty : "app-pill-danger")">
+                                    @scheduleItem.PublishedDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/ScheduleItems/Details"
+                                   asp-route-id="@scheduleItem.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,289 @@
+@model PbmEventPortal.Web.Pages.Admin.ScoreSheets.ScoreSheetWorkspaceModel
+@{
+    var hasTeamEntries = Model.Rows.Any(x => x.IsTeamEntry);
+    var criteriaTotalMax = Model.Criteria.Where(x => x.MaxScore.HasValue).Sum(x => x.MaxScore!.Value);
+    var totalLabel = hasTeamEntries ? "Sub-total" : "Total";
+    var totalHeader = criteriaTotalMax > 0 ? $"{totalLabel} / {criteriaTotalMax:0.##}" : totalLabel;
+    var isSubmitted = string.Equals(Model.Context?.ScoreSheetStatus, "SUBMITTED", StringComparison.OrdinalIgnoreCase);
+    var isPendingVerification = string.Equals(Model.Context?.ScoreSheetStatus, "PENDING_VERIFICATION", StringComparison.OrdinalIgnoreCase);
+    var canSaveDraft = !isSubmitted && !isPendingVerification;
+    var canSaveChanges = isSubmitted || isPendingVerification;
+
+    var summaryEntriesInSheet = 0;
+    var summaryNotStarted = 0;
+    var summaryInProgress = 0;
+    var summaryPendingVerification = 0;
+    var summaryCompleted = 0;
+    var teamEntryGroups = Model.Rows.GroupBy(x => x.RegistrationEntryId).ToList();
+
+    if (hasTeamEntries)
+    {
+        summaryEntriesInSheet = teamEntryGroups.Count;
+
+        foreach (var teamEntryGroup in teamEntryGroups)
+        {
+            var scoreCells = teamEntryGroup.SelectMany(row => row.Scores).ToList();
+            var scoredCellCount = scoreCells.Count(score => score.ScoreValue.HasValue);
+            var requiredCellCount = teamEntryGroup.Count() * Model.Criteria.Count;
+            var hasPendingVerification = scoreCells.Any(score => score.IsPendingVerification);
+
+            if (hasPendingVerification)
+            {
+                summaryPendingVerification++;
+            }
+            else if (scoredCellCount == 0)
+            {
+                summaryNotStarted++;
+            }
+            else if (requiredCellCount > 0 && scoredCellCount >= requiredCellCount)
+            {
+                summaryCompleted++;
+            }
+            else
+            {
+                summaryInProgress++;
+            }
+        }
+    }
+    else
+    {
+        summaryEntriesInSheet = Model.Rows.Count;
+
+        foreach (var row in Model.Rows)
+        {
+            var scoredCellCount = row.Scores.Count(score => score.ScoreValue.HasValue);
+            var requiredCellCount = Model.Criteria.Count;
+            var hasPendingVerification = row.Scores.Any(score => score.IsPendingVerification);
+
+            if (hasPendingVerification)
+            {
+                summaryPendingVerification++;
+            }
+            else if (scoredCellCount == 0)
+            {
+                summaryNotStarted++;
+            }
+            else if (requiredCellCount > 0 && scoredCellCount >= requiredCellCount)
+            {
+                summaryCompleted++;
+            }
+            else
+            {
+                summaryInProgress++;
+            }
+        }
+    }
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6 col-xl">
+        <div class="app-card h-100">
+            <div class="text-muted small">Entries in Sheet</div>
+            <div class="display-6 fw-semibold">@summaryEntriesInSheet</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl">
+        <div class="app-card h-100">
+            <div class="text-muted small">Not Started</div>
+            <div class="display-6 fw-semibold">@summaryNotStarted</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl">
+        <div class="app-card h-100">
+            <div class="text-muted small">In Progress</div>
+            <div class="display-6 fw-semibold">@summaryInProgress</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl">
+        <div class="app-card h-100">
+            <div class="text-muted small">Pending Verification</div>
+            <div class="display-6 fw-semibold">@summaryPendingVerification</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl">
+        <div class="app-card h-100">
+            <div class="text-muted small">Completed</div>
+            <div class="display-6 fw-semibold">@summaryCompleted</div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.IsLoaded || Model.Context == null)
+{
+    <div class="app-card">
+        <p class="text-muted mb-0">@(Model.EmptyMessage ?? "Select a competition year and competition/category to load the score sheet.")</p>
+    </div>
+}
+else
+{
+    <div class="app-card">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h2>Score Sheet</h2>
+                <div class="text-muted small">@Model.Context.VersionDisplay</div>
+            </div>
+            <span class="app-pill">@Model.Context.ScoreSheetStatus</span>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="text-muted small">Competition</div>
+                <div class="fw-semibold">@Model.Context.CompetitionDisplay</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Category</div>
+                <span class="app-pill">@Model.Context.CategoryDisplay</span>
+            </div>
+        </div>
+
+        @if (Model.Rows.Count == 0)
+        {
+            <p class="text-muted mb-0">No approved registration entries found for this score sheet.</p>
+        }
+        else if (Model.Criteria.Count == 0)
+        {
+            <p class="text-muted mb-0">No active scoring criteria found for this score sheet.</p>
+        }
+        else
+        {
+            <form method="post" id="scoreSheetForm">
+                <input type="hidden" name="Input.CompetitionYearId" value="@Model.Input.CompetitionYearId" />
+                <input type="hidden" name="Input.CompetitionCategoryId" value="@Model.Input.CompetitionCategoryId" />
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle" id="scoreSheetTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;">No.</th>
+                                <th>Participant Name</th>
+                                <th>Team</th>
+                                @foreach (var criterion in Model.Criteria)
+                                {
+                                    <th>
+                                        @criterion.CriterionDisplay @(criterion.MaxScore.HasValue ? $"/ {criterion.MaxScore.Value:0.##}" : string.Empty)
+                                        @if (!criterion.HasJudgeAssignment)
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-title="No judge assigned for this criteria. Scores entered here will be saved as an admin override."
+                                               aria-label="No judge assigned for this criteria"></i>
+                                        }
+                                    </th>
+                                }
+                                <th>@totalHeader</th>
+                                @if (hasTeamEntries)
+                                {
+                                    <th>Team Total</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (hasTeamEntries)
+                            {
+                                @for (var teamIndex = 0; teamIndex < teamEntryGroups.Count; teamIndex++)
+                                {
+                                    var teamRows = teamEntryGroups[teamIndex].ToList();
+                                    var rowSpan = teamRows.Count;
+                                    var teamDisplayRow = teamRows.First();
+
+                                    @for (var memberIndex = 0; memberIndex < teamRows.Count; memberIndex++)
+                                    {
+                                        var row = teamRows[memberIndex];
+                                        <tr data-score-row="true" data-entry-id="@row.RegistrationEntryId">
+                                            @if (memberIndex == 0)
+                                            {
+                                                <td class="fw-semibold align-top" rowspan="@rowSpan">@(teamIndex + 1)</td>
+                                            }
+                                            <td>
+                                                <div class="fw-semibold">@row.ParticipantName</div>
+                                            </td>
+                                            @if (memberIndex == 0)
+                                            {
+                                                <td class="align-top" rowspan="@rowSpan">
+                                                    <div class="fw-semibold">@teamDisplayRow.TeamCode</div>
+                                                </td>
+                                            }
+                                            @foreach (var score in row.Scores)
+                                            {
+                                                <td class="@(score.IsPendingVerification ? "table-warning" : string.Empty)">
+                                                    <input type="hidden" name="Input.Scores[@score.InputIndex].RegistrationEntryId" value="@row.RegistrationEntryId" />
+                                                    <input type="hidden" name="Input.Scores[@score.InputIndex].RegistrationEntryMemberId" value="@row.RegistrationEntryMemberId" />
+                                                    <input type="hidden" name="Input.Scores[@score.InputIndex].CriterionId" value="@score.CriterionId" />
+                                                    <input class="form-control" type="number" step="1" min="0" max="@(score.MaxScore?.ToString("0.##"))" name="Input.Scores[@score.InputIndex].ScoreValue" value="@(score.ScoreValue?.ToString("0.##"))" data-score-input="true" data-bounded-number-input="true" data-bounded-number-whole="true" data-bounded-number-unit="marks" data-bounded-number-whole-message="Whole marks only" />
+                                                    <input class="form-control form-control-sm mt-1" type="text" maxlength="500" name="Input.Scores[@score.InputIndex].Notes" value="@score.Notes" placeholder="Remarks" />
+                                                    @if (score.IsPendingVerification)
+                                                    {
+                                                        <div class="form-text text-warning">Pending verification</div>
+                                                    }
+                                                </td>
+                                            }
+                                            <td class="fw-semibold" data-member-total="true">@row.SubTotal.ToString("0.##")</td>
+                                            @if (memberIndex == 0)
+                                            {
+                                                <td class="fw-semibold align-top" rowspan="@rowSpan" data-team-total="true">@teamDisplayRow.TeamTotal.ToString("0.##")</td>
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                @for (var rowIndex = 0; rowIndex < Model.Rows.Count; rowIndex++)
+                                {
+                                    var row = Model.Rows[rowIndex];
+                                    <tr data-score-row="true" data-entry-id="@row.RegistrationEntryId">
+                                        <td class="fw-semibold align-top">@(rowIndex + 1)</td>
+                                        <td>
+                                            <div class="fw-semibold">@row.ParticipantName</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">@row.TeamCode</div>
+                                        </td>
+                                        @foreach (var score in row.Scores)
+                                        {
+                                            <td class="@(score.IsPendingVerification ? "table-warning" : string.Empty)">
+                                                <input type="hidden" name="Input.Scores[@score.InputIndex].RegistrationEntryId" value="@row.RegistrationEntryId" />
+                                                <input type="hidden" name="Input.Scores[@score.InputIndex].RegistrationEntryMemberId" value="@row.RegistrationEntryMemberId" />
+                                                <input type="hidden" name="Input.Scores[@score.InputIndex].CriterionId" value="@score.CriterionId" />
+                                                <input class="form-control" type="number" step="1" min="0" max="@(score.MaxScore?.ToString("0.##"))" name="Input.Scores[@score.InputIndex].ScoreValue" value="@(score.ScoreValue?.ToString("0.##"))" data-score-input="true" data-bounded-number-input="true" data-bounded-number-whole="true" data-bounded-number-unit="marks" data-bounded-number-whole-message="Whole marks only" />
+                                                <input class="form-control form-control-sm mt-1" type="text" maxlength="500" name="Input.Scores[@score.InputIndex].Notes" value="@score.Notes" placeholder="Remarks" />
+                                                @if (score.IsPendingVerification)
+                                                {
+                                                    <div class="form-text text-warning">Pending verification</div>
+                                                }
+                                            </td>
+                                        }
+                                        <td class="fw-semibold" data-member-total="true">@row.SubTotal.ToString("0.##")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-12">
+                        <label for="Input_Notes" class="form-label">Score sheet notes</label>
+                        <textarea id="Input_Notes" name="Input.Notes" class="form-control" rows="3">@Model.Input.Notes</textarea>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mt-4 mb-0">
+                    Admin workspace: missing judge criteria are saved as admin overrides and remain audit logged.
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
+                    @if (canSaveDraft)
+                    {
+                        <button type="submit" class="btn btn-primary" asp-page-handler="SaveDraft">Save Draft</button>
+                    }
+                    @if (canSaveChanges)
+                    {
+                        <button type="submit" class="btn btn-warning" asp-page-handler="SaveChanges">Save Changes</button>
+                    }
+                    <button type="submit" class="btn btn-success ms-auto" asp-page-handler="SubmitScores">Submit Scores</button>
+                </div>
+            </form>
+        }
+    </div>
+}

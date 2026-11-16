@@ -1,0 +1,179 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.Venues.CreateModel
+@{
+    ViewData["Title"] = "Add Venue";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Add Venue</h1>
+    <p>Configure a venue used for PBM schedules, judging sessions, and event logistics.</p>
+    <p class="app-required-legend"><span class="app-required">*</span> Mandatory field</p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createVenueForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.CompetitionYearId" class="form-label">Competition year <span class="app-required">*</span></label>
+                <select asp-for="Input.CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.CompetitionYearId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.Code" class="form-label">Venue code <span class="app-required">*</span></label>
+                <input asp-for="Input.Code" class="form-control" maxlength="50" required />
+                <span asp-validation-for="Input.Code" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.Name" class="form-label">Venue name <span class="app-required">*</span></label>
+                <input asp-for="Input.Name" class="form-control" maxlength="200" required />
+                <span asp-validation-for="Input.Name" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.LocationText" class="form-label">Location</label>
+                <input asp-for="Input.LocationText" class="form-control" maxlength="300" />
+                <span asp-validation-for="Input.LocationText" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.Capacity" class="form-label">Capacity</label>
+                <input asp-for="Input.Capacity" class="form-control" min="0" step="1" />
+                <span asp-validation-for="Input.Capacity" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label">Notes</label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelCreateVenueModal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetCreateVenueModal">Reset</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Venue</button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createVenueResultModal" tabindex="-1" aria-labelledby="createVenueResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createVenueResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">@Model.ResultMessage</p>
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/Venues/Index">View All Venues</a>
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay, I’ll fix it</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateVenueModal" tabindex="-1" aria-labelledby="resetCreateVenueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateVenueModalLabel">Reset form?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">This will clear all entered venue details and return the form to its default state.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Keep editing</button>
+                <button type="button" class="btn btn-danger" id="confirmResetButton">Reset form</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateVenueModal" tabindex="-1" aria-labelledby="cancelCreateVenueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateVenueModalLabel">Cancel adding venue?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Any details entered on this page will not be saved.</div>
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/Venues/Index">Cancel adding venue</a>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Stay here</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("createVenueForm");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+            confirmResetButton?.addEventListener("click", () => {
+                form?.reset();
+                bootstrap.Modal.getInstance(document.getElementById("resetCreateVenueModal"))?.hide();
+            });
+        })();
+    </script>
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createVenueResultModal");
+                if (modalElement) new bootstrap.Modal(modalElement).show();
+            });
+        </script>
+    }
+}

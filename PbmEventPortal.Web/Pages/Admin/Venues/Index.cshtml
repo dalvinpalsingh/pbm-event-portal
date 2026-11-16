@@ -1,0 +1,76 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.Venues.IndexModel
+@{
+    ViewData["Title"] = "Venues";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Venues</h1>
+    <p>
+        Manage rooms, halls, and event spaces used for PBM schedules and activities.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/Venues/Create">
+            Add Venue
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.Venues.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No venues have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Capacity</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var venue in Model.Venues)
+                    {
+                        <tr>
+                            <td>@venue.CompetitionYearDisplay</td>
+                            <td><span class="app-pill">@venue.Code</span></td>
+                            <td>
+                                <div class="fw-semibold">@venue.Name</div>
+                            </td>
+                            <td>@venue.LocationDisplay</td>
+                            <td>@venue.CapacityDisplay</td>
+                            <td>
+                                <span class="app-pill @(venue.IsActive ? string.Empty : "app-pill-danger")">
+                                    @venue.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/Venues/Details"
+                                   asp-route-id="@venue.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

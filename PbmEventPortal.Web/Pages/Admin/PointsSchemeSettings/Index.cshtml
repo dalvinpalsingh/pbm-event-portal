@@ -1,0 +1,412 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.PointsSchemeSettings.IndexModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Points Scheme Settings";
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+    var pointsSchemeJson = JsonSerializer.Serialize(Model.PointsSchemeOptions.Select(x => new
+    {
+        id = x.Id,
+        schemeName = x.SchemeName,
+        winnerCount = x.WinnerCount,
+        compactDisplayName = x.CompactDisplayName,
+        items = x.Items.Select(item => new
+        {
+            placingNo = item.PlacingNo,
+            pointsAwarded = item.PointsAwarded
+        }).ToList()
+    }));
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Results Setup</p>
+    <h1>Points Scheme Settings</h1>
+    <p>
+        Select the event-level default points scheme and optional competition-level points scheme overrides.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+    </div>
+</div>
+
+<div class="app-card mb-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-12">
+            <label asp-for="CompetitionYearId" class="form-label">Competition year</label>
+            <select asp-for="CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" id="competitionYearSelect">
+                <option value="">Select competition year...</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+@if (!Model.CompetitionYearId.HasValue)
+{
+    <div class="app-card">
+        <p class="text-muted mb-0">Select a competition year to configure points scheme settings.</p>
+    </div>
+}
+else
+{
+    <form method="post" class="app-card" id="pointsSchemeSettingsForm">
+        <input type="hidden" asp-for="Input.CompetitionYearId" id="inputCompetitionYearId" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="text-muted small">Competition Year</div>
+                <div class="fw-semibold" id="workspaceCompetitionYearDisplay">@Model.Workspace.CompetitionYearDisplay</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small">Competitions</div>
+                <div class="fw-semibold" id="workspaceCompetitionCount">@Model.Workspace.CompetitionCount</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small">Competition Overrides</div>
+                <div class="fw-semibold" id="workspaceOverrideCount">@Model.Workspace.OverrideCount</div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-7">
+                <label asp-for="Input.DefaultPointsSchemeId" class="form-label">Event default points scheme <span class="text-danger">*</span></label>
+                <select asp-for="Input.DefaultPointsSchemeId" class="form-select" id="defaultPointsSchemeSelect">
+                    <option value="">Select event default points scheme...</option>
+                    @foreach (var scheme in Model.PointsSchemeOptions)
+                    {
+                        <option value="@scheme.Id">@scheme.CompactDisplayName</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.DefaultPointsSchemeId" class="text-danger"></span>
+                <div class="form-text">
+                    Competitions set to use event default will resolve to this points scheme.
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="alert alert-warning mb-0" id="defaultPointsSchemeDetails">
+                    Loading points scheme details...
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Workspace.Competitions.Count == 0)
+        {
+            <p class="text-muted mb-0" id="emptyCompetitionsMessage">No competitions found for this competition year.</p>
+        }
+        else
+        {
+            <p class="text-muted mb-0 d-none" id="emptyCompetitionsMessage">No competitions found for this competition year.</p>
+        }
+
+        <div class="table-responsive @(Model.Workspace.Competitions.Count == 0 ? "d-none" : string.Empty)" id="competitionSettingsTableWrapper">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Competition</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th style="min-width: 320px;">Points Scheme</th>
+                        <th>Currently Resolved</th>
+                    </tr>
+                </thead>
+                <tbody id="competitionSettingsTableBody">
+                    @foreach (var competition in Model.Workspace.Competitions)
+                    {
+                        <tr data-competition-row="true">
+                            <td>
+                                <input type="hidden" name="Input.CompetitionSettings[@competition.InputIndex].CompetitionId" value="@competition.CompetitionId" />
+                                <div class="fw-semibold">@competition.CompetitionCode</div>
+                                <div class="text-muted small">@competition.CompetitionName</div>
+                            </td>
+                            <td>@competition.CompetitionType</td>
+                            <td>
+                                @if (competition.IsActive)
+                                {
+                                    <span class="app-pill">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <select name="Input.CompetitionSettings[@competition.InputIndex].PointsSchemeId" class="form-select competition-points-scheme-select">
+                                    <option value="">Use event default</option>
+                                    @foreach (var scheme in Model.PointsSchemeOptions)
+                                    {
+                                        <option value="@scheme.Id" selected="@(competition.PointsSchemeId == scheme.Id)">@scheme.CompactDisplayName</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <div class="fw-semibold resolved-points-scheme-display">@competition.ResolvedPointsSchemeDisplay</div>
+                                <div class="text-muted small resolved-points-scheme-source">@(competition.IsOverride ? "Competition override" : "Using event default")</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-between mt-4">
+            <a class="btn btn-outline-danger" asp-page="/Admin/Index">Cancel</a>
+            <button type="submit" class="btn btn-primary" asp-page-handler="Save">Save Changes</button>
+        </div>
+    </form>
+}
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="pointsSchemeSettingsResultModal" tabindex="-1" aria-labelledby="pointsSchemeSettingsResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="pointsSchemeSettingsResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">@Model.ResultMessage</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const pointsSchemeOptions = @Html.Raw(pointsSchemeJson);
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function ordinal(value) {
+            const number = Number(value);
+            const mod100 = number % 100;
+            if (mod100 >= 11 && mod100 <= 13) return `${number}th`;
+
+            switch (number % 10) {
+                case 1: return `${number}st`;
+                case 2: return `${number}nd`;
+                case 3: return `${number}rd`;
+                default: return `${number}th`;
+            }
+        }
+
+        function pointsLabel(points) {
+            return Number(points) === 1 ? "point" : "points";
+        }
+
+        function getScheme(schemeId) {
+            if (!schemeId) return null;
+            return pointsSchemeOptions.find(item => String(item.id).toLowerCase() === String(schemeId).toLowerCase()) ?? null;
+        }
+
+        function getCompactSchemeDisplay(schemeId) {
+            const scheme = getScheme(schemeId);
+            return scheme ? scheme.compactDisplayName : "Not selected";
+        }
+
+        function buildSchemeDetailsHtml(schemeId) {
+            const scheme = getScheme(schemeId);
+            if (!scheme) {
+                return `
+                    <div class="fw-semibold">Not selected</div>
+                    <div class="small mt-1">Select an event default points scheme before saving settings.</div>
+                `;
+            }
+
+            const rows = [...scheme.items]
+                .sort((a, b) => Number(a.placingNo) - Number(b.placingNo))
+                .map(item => `
+                    <tr>
+                        <td class="pe-3 text-nowrap">${ordinal(item.placingNo)} place</td>
+                        <td class="px-2 text-muted">=</td>
+                        <td class="fw-semibold text-nowrap">${item.pointsAwarded} ${pointsLabel(item.pointsAwarded)}</td>
+                    </tr>
+                `)
+                .join("");
+
+            return `
+                <div class="fw-semibold">${escapeHtml(scheme.schemeName)}</div>
+                <div class="mt-2">Points awarded to Top ${scheme.winnerCount}:</div>
+                <table class="table table-sm table-borderless mb-0 mt-1 w-auto">
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function buildSchemeOptionsHtml(selectedValue) {
+            const options = pointsSchemeOptions.map(scheme => {
+                const selected = String(selectedValue ?? "").toLowerCase() === String(scheme.id).toLowerCase() ? "selected" : "";
+                return `<option value="${scheme.id}" ${selected}>${escapeHtml(scheme.compactDisplayName)}</option>`;
+            }).join("");
+
+            return `<option value="">Use event default</option>${options}`;
+        }
+
+        function normalizeSelectValue(value, defaultSchemeId) {
+            if (!value) return "";
+            if (defaultSchemeId && String(value).toLowerCase() === String(defaultSchemeId).toLowerCase()) return "";
+            return value;
+        }
+
+        function updateDefaultSchemeDetails() {
+            const defaultSelect = document.getElementById("defaultPointsSchemeSelect");
+            const details = document.getElementById("defaultPointsSchemeDetails");
+            if (!defaultSelect || !details) return;
+
+            details.innerHTML = buildSchemeDetailsHtml(defaultSelect.value);
+        }
+
+        function updateCompetitionResolvedDisplays() {
+            const defaultSelect = document.getElementById("defaultPointsSchemeSelect");
+            const defaultSchemeId = defaultSelect?.value ?? "";
+            let overrideCount = 0;
+
+            document.querySelectorAll("[data-competition-row='true']").forEach(row => {
+                const select = row.querySelector(".competition-points-scheme-select");
+                const display = row.querySelector(".resolved-points-scheme-display");
+                const source = row.querySelector(".resolved-points-scheme-source");
+                if (!select || !display || !source) return;
+
+                const normalizedValue = normalizeSelectValue(select.value, defaultSchemeId);
+                if (select.value !== normalizedValue) select.value = normalizedValue;
+
+                const resolvedId = normalizedValue || defaultSchemeId;
+                const isOverride = Boolean(normalizedValue);
+                if (isOverride) overrideCount++;
+
+                display.textContent = getCompactSchemeDisplay(resolvedId);
+                source.textContent = isOverride ? "Competition override" : "Using event default";
+            });
+
+            const overrideCountElement = document.getElementById("workspaceOverrideCount");
+            if (overrideCountElement) overrideCountElement.textContent = String(overrideCount);
+        }
+
+        function buildCompetitionRow(competition, index, defaultSchemeId) {
+            const selectedValue = normalizeSelectValue(competition.pointsSchemeId, defaultSchemeId);
+            const resolvedId = selectedValue || defaultSchemeId;
+            const isOverride = Boolean(selectedValue);
+            const statusHtml = competition.isActive
+                ? `<span class="app-pill">Active</span>`
+                : `<span class="badge bg-secondary">Inactive</span>`;
+
+            return `
+                <tr data-competition-row="true">
+                    <td>
+                        <input type="hidden" name="Input.CompetitionSettings[${index}].CompetitionId" value="${competition.competitionId}" />
+                        <div class="fw-semibold">${escapeHtml(competition.competitionCode)}</div>
+                        <div class="text-muted small">${escapeHtml(competition.competitionName)}</div>
+                    </td>
+                    <td>${escapeHtml(competition.competitionType)}</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                        <select name="Input.CompetitionSettings[${index}].PointsSchemeId" class="form-select competition-points-scheme-select">
+                            ${buildSchemeOptionsHtml(selectedValue)}
+                        </select>
+                    </td>
+                    <td>
+                        <div class="fw-semibold resolved-points-scheme-display">${escapeHtml(getCompactSchemeDisplay(resolvedId))}</div>
+                        <div class="text-muted small resolved-points-scheme-source">${isOverride ? "Competition override" : "Using event default"}</div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function applyWorkspace(data) {
+            const inputCompetitionYearId = document.getElementById("inputCompetitionYearId");
+            const yearDisplay = document.getElementById("workspaceCompetitionYearDisplay");
+            const competitionCount = document.getElementById("workspaceCompetitionCount");
+            const overrideCount = document.getElementById("workspaceOverrideCount");
+            const defaultSelect = document.getElementById("defaultPointsSchemeSelect");
+            const tableBody = document.getElementById("competitionSettingsTableBody");
+            const tableWrapper = document.getElementById("competitionSettingsTableWrapper");
+            const emptyMessage = document.getElementById("emptyCompetitionsMessage");
+
+            if (inputCompetitionYearId) inputCompetitionYearId.value = data.competitionYearId ?? "";
+            if (yearDisplay) yearDisplay.textContent = data.competitionYearDisplay ?? "";
+            if (competitionCount) competitionCount.textContent = String(data.competitionCount ?? 0);
+            if (overrideCount) overrideCount.textContent = String(data.overrideCount ?? 0);
+            if (defaultSelect) defaultSelect.value = data.defaultPointsSchemeId ?? "";
+
+            if (tableBody) {
+                tableBody.innerHTML = (data.competitions ?? [])
+                    .map((competition, index) => buildCompetitionRow(competition, index, data.defaultPointsSchemeId ?? ""))
+                    .join("");
+            }
+
+            if (tableWrapper && emptyMessage) {
+                const hasCompetitions = (data.competitions ?? []).length > 0;
+                tableWrapper.classList.toggle("d-none", !hasCompetitions);
+                emptyMessage.classList.toggle("d-none", hasCompetitions);
+            }
+
+            updateDefaultSchemeDetails();
+            updateCompetitionResolvedDisplays();
+        }
+
+        async function loadCompetitionYearSettings(competitionYearId) {
+            if (!competitionYearId) return;
+
+            const response = await fetch(`?handler=YearSettings&competitionYearId=${encodeURIComponent(competitionYearId)}`, {
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to load points scheme settings.");
+            }
+
+            const data = await response.json();
+            applyWorkspace(data);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            updateDefaultSchemeDetails();
+            updateCompetitionResolvedDisplays();
+
+            document.getElementById("competitionYearSelect")?.addEventListener("change", async event => {
+                try {
+                    await loadCompetitionYearSettings(event.target.value);
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+
+            document.getElementById("defaultPointsSchemeSelect")?.addEventListener("change", () => {
+                updateDefaultSchemeDetails();
+                updateCompetitionResolvedDisplays();
+            });
+
+            document.getElementById("competitionSettingsTableBody")?.addEventListener("change", event => {
+                if (event.target.classList.contains("competition-points-scheme-select")) {
+                    updateCompetitionResolvedDisplays();
+                }
+            });
+
+            const modalElement = document.getElementById("pointsSchemeSettingsResultModal");
+            if (modalElement) new bootstrap.Modal(modalElement).show();
+        });
+    </script>
+}

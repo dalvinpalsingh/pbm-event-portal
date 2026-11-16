@@ -1,0 +1,612 @@
+﻿@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.UserProfiles.EditModel
+@{
+    ViewData["Title"] = "Edit User";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">User management</p>
+    <h1>Edit User</h1>
+    <p>
+        Update this user profile.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editUserForm">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.FullNameAsPerId" class="form-label">
+                    Full name as per ID <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.FullNameAsPerId" class="form-control" required />
+                <span asp-validation-for="Input.FullNameAsPerId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.FullNameGurmukhi" class="form-label"></label>
+                <input asp-for="Input.FullNameGurmukhi" class="form-control" />
+                <span asp-validation-for="Input.FullNameGurmukhi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.IdType" class="form-label">
+                    ID type <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.IdType" class="form-select" id="idTypeSelect" required>
+                    <option value="NRIC">NRIC</option>
+                    <option value="PASSPORT">Passport</option>
+                </select>
+                <span asp-validation-for="Input.IdType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4" data-id-section="nric">
+                <label asp-for="Input.NricNumberDisplay" class="form-label">
+                    NRIC number <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.NricNumberDisplay"
+                       class="form-control"
+                       id="nricInput"
+                       maxlength="14"
+                       placeholder="990101-01-0101"
+                       inputmode="numeric" />
+                <span asp-validation-for="Input.NricNumberDisplay" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" data-id-section="passport">
+                <label asp-for="Input.PassportNumber" class="form-label">
+                    Passport number <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.PassportNumber" class="form-control" />
+                <span asp-validation-for="Input.PassportNumber" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-none" data-id-section="passport">
+                <label asp-for="Input.PassportExpiryDate" class="form-label">
+                    Passport expiry date <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.PassportExpiryDate" class="form-control" type="date" />
+                <span asp-validation-for="Input.PassportExpiryDate" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">
+                    Mobile number <span class="app-required">*</span>
+                </label>
+
+                <div class="app-phone-control">
+                    <input type="hidden" asp-for="Input.MobileCountryCode" id="mobileCountryCodeInput" />
+                    <input type="hidden" asp-for="Input.MobileNumber" id="mobileFullNumberInput" />
+
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary app-phone-country-button dropdown-toggle"
+                                type="button"
+                                id="mobileCountryDropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <span id="selectedCountryFlag">🇲🇾</span>
+                            <span id="selectedCountryCode">@Model.Input.MobileCountryCode</span>
+                        </button>
+
+                        <div class="dropdown-menu app-phone-country-menu" aria-labelledby="mobileCountryDropdown">
+                            <div class="px-2 pb-2">
+                                <input type="search"
+                                       class="form-control form-control-sm"
+                                       id="countrySearchInput"
+                                       placeholder="Search country..." />
+                            </div>
+
+                            <div id="countryOptions"></div>
+                        </div>
+                    </div>
+
+                    <input asp-for="Input.MobileLocalNumber"
+                           class="form-control"
+                           id="mobileLocalNumberInput"
+                           inputmode="numeric"
+                           placeholder="123456789"
+                           required />
+                </div>
+
+                <div id="mobilePreview" class="app-field-feedback text-muted">
+                    My number is @Model.Input.MobileNumber
+                </div>
+
+                <span asp-validation-for="Input.MobileLocalNumber" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.Email" class="form-label">
+                    Email address <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.Email"
+                       class="form-control"
+                       id="emailInput"
+                       autocomplete="username"
+                       required />
+                <div id="emailFeedback" class="app-field-feedback"></div>
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Gender <span class="app-required">*</span>
+                </label>
+                <input type="hidden" asp-for="Input.Gender" id="genderHidden" />
+                <select class="form-select" id="genderSelect" required>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                </select>
+                <span asp-validation-for="Input.Gender" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.DateOfBirth" class="form-label">
+                    Date of birth <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.DateOfBirth"
+                       class="form-control"
+                       id="dateOfBirthInput"
+                       type="date"
+                       required />
+                <span asp-validation-for="Input.DateOfBirth" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelEditUserModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetEditUserModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editUserResultModal" tabindex="-1" aria-labelledby="editUserResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editUserResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    @if (resultIsSuccess)
+                    {
+                        <a class="btn btn-outline-danger" asp-page="/Admin/UserProfiles/Index">
+                            View All Users
+                        </a>
+
+                        <a class="btn btn-primary"
+                           asp-page="/Admin/UserProfiles/Details"
+                           asp-route-id="@Model.Input.Id">
+                            View This User
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditUserModal" tabindex="-1" aria-labelledby="resetEditUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditUserModalLabel">
+                        Reset changes?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will discard unsaved changes and reload the saved user profile details.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditUserModal" tabindex="-1" aria-labelledby="cancelEditUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditUserModalLabel">
+                        Cancel editing user?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any unsaved changes on this page will be lost.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger"
+                   asp-page="/Admin/UserProfiles/Details"
+                   asp-route-id="@Model.Input.Id">
+                    Cancel editing
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const countries = [
+                { name: "Malaysia", code: "+60", flag: "🇲🇾" },
+                { name: "Singapore", code: "+65", flag: "🇸🇬" },
+                { name: "India", code: "+91", flag: "🇮🇳" },
+                { name: "Australia", code: "+61", flag: "🇦🇺" },
+                { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
+                { name: "Sweden", code: "+46", flag: "🇸🇪" },
+                { name: "United States", code: "+1", flag: "🇺🇸" },
+                { name: "Canada", code: "+1", flag: "🇨🇦" },
+                { name: "Indonesia", code: "+62", flag: "🇮🇩" },
+                { name: "Thailand", code: "+66", flag: "🇹🇭" }
+            ];
+
+            const form = document.getElementById("editUserForm");
+            const idTypeSelect = document.getElementById("idTypeSelect");
+            const nricInput = document.getElementById("nricInput");
+            const genderSelect = document.getElementById("genderSelect");
+            const genderHidden = document.getElementById("genderHidden");
+            const dobInput = document.getElementById("dateOfBirthInput");
+
+            const mobileCountryCodeInput = document.getElementById("mobileCountryCodeInput");
+            const mobileFullNumberInput = document.getElementById("mobileFullNumberInput");
+            const mobileLocalNumberInput = document.getElementById("mobileLocalNumberInput");
+            const selectedCountryFlag = document.getElementById("selectedCountryFlag");
+            const selectedCountryCode = document.getElementById("selectedCountryCode");
+            const countrySearchInput = document.getElementById("countrySearchInput");
+            const countryOptions = document.getElementById("countryOptions");
+            const mobilePreview = document.getElementById("mobilePreview");
+
+            const emailInput = document.getElementById("emailInput");
+            const emailFeedback = document.getElementById("emailFeedback");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function onlyDigits(value) {
+                return (value ?? "").replace(/\D/g, "");
+            }
+
+            function formatNric(value) {
+                const digits = onlyDigits(value).slice(0, 12);
+
+                if (digits.length <= 6) {
+                    return digits;
+                }
+
+                if (digits.length <= 8) {
+                    return `${digits.slice(0, 6)}-${digits.slice(6)}`;
+                }
+
+                return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
+            }
+
+            function inferDateFromNric(digits) {
+                if (digits.length < 6) {
+                    return null;
+                }
+
+                const yy = Number(digits.slice(0, 2));
+                const mm = Number(digits.slice(2, 4));
+                const dd = Number(digits.slice(4, 6));
+
+                const currentYear = new Date().getFullYear();
+                const currentYearTwoDigits = currentYear % 100;
+                const yyyy = yy <= currentYearTwoDigits ? 2000 + yy : 1900 + yy;
+
+                const date = new Date(yyyy, mm - 1, dd);
+
+                if (
+                    date.getFullYear() !== yyyy ||
+                    date.getMonth() !== mm - 1 ||
+                    date.getDate() !== dd
+                ) {
+                    return null;
+                }
+
+                return `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+            }
+
+            function inferGenderFromNric(digits) {
+                if (digits.length < 12) {
+                    return null;
+                }
+
+                const lastDigit = Number(digits.slice(-1));
+                return lastDigit % 2 === 1 ? "M" : "F";
+            }
+
+            function updateIdFields() {
+                const selectedIdType = idTypeSelect?.value ?? "NRIC";
+                const isNric = selectedIdType === "NRIC";
+
+                document.querySelectorAll("[data-id-section]").forEach((section) => {
+                    const sectionType = section.getAttribute("data-id-section");
+                    section.classList.toggle("d-none", sectionType !== selectedIdType.toLowerCase());
+                });
+
+                if (nricInput) {
+                    nricInput.required = isNric;
+                }
+
+                document.querySelectorAll('[data-id-section="passport"] input').forEach((input) => {
+                    input.required = !isNric;
+                });
+
+                genderSelect.disabled = isNric;
+                dobInput.readOnly = isNric;
+
+                updateDerivedFieldsFromNric();
+            }
+
+            function updateDerivedFieldsFromNric() {
+                const isNric = idTypeSelect?.value === "NRIC";
+
+                if (!isNric) {
+                    genderHidden.value = genderSelect.value;
+                    return;
+                }
+
+                const digits = onlyDigits(nricInput?.value);
+
+                const inferredGender = inferGenderFromNric(digits);
+                if (inferredGender) {
+                    genderSelect.value = inferredGender;
+                    genderHidden.value = inferredGender;
+                }
+
+                const inferredDob = inferDateFromNric(digits);
+                dobInput.value = inferredDob ?? "";
+            }
+
+            function renderCountryOptions(filter = "") {
+                const normalizedFilter = filter.trim().toLowerCase();
+
+                const filteredCountries = countries.filter((country) =>
+                    country.name.toLowerCase().includes(normalizedFilter) ||
+                    country.code.includes(normalizedFilter)
+                );
+
+                countryOptions.innerHTML = "";
+
+                filteredCountries.forEach((country) => {
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "dropdown-item app-phone-country-option";
+                    button.dataset.countryCode = country.code;
+                    button.dataset.countryFlag = country.flag;
+                    button.innerHTML = `<span>${country.flag}</span><span>${country.name}</span><span class="text-muted ms-auto">${country.code}</span>`;
+
+                    button.addEventListener("click", () => {
+                        setSelectedCountry(country.code, country.flag);
+                    });
+
+                    countryOptions.appendChild(button);
+                });
+            }
+
+            function setSelectedCountry(code, flag) {
+                mobileCountryCodeInput.value = code;
+                selectedCountryCode.textContent = code;
+                selectedCountryFlag.textContent = flag;
+
+                updateMobileFullNumber();
+            }
+
+            function syncSelectedCountryFromHiddenInput() {
+                const countryCode = mobileCountryCodeInput?.value || "+60";
+                const selectedCountry = countries.find((country) => country.code === countryCode) ?? countries[0];
+
+                setSelectedCountry(selectedCountry.code, selectedCountry.flag);
+            }
+
+            function updateMobileFullNumber() {
+                const localDigits = onlyDigits(mobileLocalNumberInput?.value);
+                const countryCode = mobileCountryCodeInput?.value || "+60";
+                const fullNumber = `${countryCode}${localDigits}`;
+
+                if (mobileLocalNumberInput) {
+                    mobileLocalNumberInput.value = localDigits;
+                }
+
+                if (mobileFullNumberInput) {
+                    mobileFullNumberInput.value = fullNumber;
+                }
+
+                if (mobilePreview) {
+                    mobilePreview.textContent = localDigits
+                        ? `My number is ${fullNumber}`
+                        : `My number is ${countryCode}...`;
+                }
+            }
+
+            function updateEmailFeedback() {
+                const email = emailInput?.value.trim() ?? "";
+
+                if (!emailFeedback) {
+                    return;
+                }
+
+                if (!email) {
+                    emailFeedback.textContent = "";
+                    emailFeedback.className = "app-field-feedback";
+                    return;
+                }
+
+                const isValid = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email);
+
+                emailFeedback.textContent = isValid
+                    ? "Email format looks correct."
+                    : "Please enter a valid email address.";
+
+                emailFeedback.className = isValid
+                    ? "app-field-feedback is-valid"
+                    : "app-field-feedback is-invalid";
+            }
+
+            function resetFormToSavedValues() {
+                window.location.href = window.location.pathname;
+            }
+
+            idTypeSelect?.addEventListener("change", updateIdFields);
+
+            nricInput?.addEventListener("input", () => {
+                nricInput.value = formatNric(nricInput.value);
+                updateDerivedFieldsFromNric();
+            });
+
+            genderSelect?.addEventListener("change", () => {
+                genderHidden.value = genderSelect.value;
+            });
+
+            mobileLocalNumberInput?.addEventListener("input", updateMobileFullNumber);
+
+            countrySearchInput?.addEventListener("input", () => {
+                renderCountryOptions(countrySearchInput.value);
+            });
+
+            countrySearchInput?.addEventListener("click", (event) => {
+                event.stopPropagation();
+            });
+
+            emailInput?.addEventListener("input", updateEmailFeedback);
+
+            confirmResetButton?.addEventListener("click", resetFormToSavedValues);
+
+            form?.addEventListener("submit", () => {
+                updateMobileFullNumber();
+                updateDerivedFieldsFromNric();
+
+                if (idTypeSelect?.value === "PASSPORT") {
+                    genderHidden.value = genderSelect.value;
+                }
+            });
+
+            renderCountryOptions();
+            syncSelectedCountryFromHiddenInput();
+            updateIdFields();
+            updateMobileFullNumber();
+            updateEmailFeedback();
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editUserResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

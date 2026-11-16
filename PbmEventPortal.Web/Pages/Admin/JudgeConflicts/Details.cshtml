@@ -1,0 +1,78 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.JudgeConflicts.DetailsModel
+@{
+    ViewData["Title"] = "Judge Conflict Details";
+    var conflict = Model.Conflict!;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Judge Conflict Details</h1>
+    <p>Review the judge conflict target, notes, status, and audit information.</p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/JudgeConflicts/Index">
+            Back to Judge Conflicts
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/JudgeConflicts/Edit" asp-route-id="@conflict.Id">
+            Edit Conflict
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="text-muted small">Judge</div>
+            <div class="fw-semibold">@conflict.JudgeDisplay</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Mobile number</div>
+            <div class="fw-semibold">@conflict.JudgeMobileNumber</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Status</div>
+            <span class="app-pill @(conflict.IsActive ? string.Empty : "app-pill-danger")">@conflict.StatusDisplay</span>
+        </div>
+
+        <div class="col-md-6">
+            <div class="text-muted small">Conflict type</div>
+            <div class="fw-semibold">@conflict.ConflictTypeDisplay</div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="text-muted small">Target</div>
+            <div class="fw-semibold">@conflict.TargetDisplay</div>
+        </div>
+
+        <div class="col-12">
+            <div class="text-muted small">Notes</div>
+            <div>@conflict.NotesDisplay</div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-3">
+    <h2>Audit information</h2>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="text-muted small">Created at</div>
+            <div>@conflict.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Created by</div>
+            <div>@conflict.CreatedByDisplay</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Updated at</div>
+            <div>@(conflict.UpdatedAt.HasValue ? conflict.UpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "Not updated yet")</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Updated by</div>
+            <div>@conflict.UpdatedByDisplay</div>
+        </div>
+    </div>
+</div>

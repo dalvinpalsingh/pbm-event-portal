@@ -1,0 +1,97 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.PointsSchemes.DetailsModel
+@{
+    ViewData["Title"] = "View Points Scheme";
+    var pointsScheme = Model.PointsScheme;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>View Points Scheme</h1>
+    <p>
+        View placing points configured for this points scheme.
+    </p>
+
+    @if (pointsScheme != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/PointsSchemes/Index">
+                Back to Points Schemes
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/PointsSchemes/Edit"
+               asp-route-id="@pointsScheme.Id">
+                Edit
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/PointsSchemes/Index">
+            Back to Points Schemes
+        </a>
+    }
+</div>
+
+@if (pointsScheme == null)
+{
+    <div class="app-alert app-alert-danger">
+        Points scheme not found.
+    </div>
+}
+else
+{
+    <div class="app-card">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Scheme name</label>
+                <input type="text" class="form-control" value="@pointsScheme.SchemeNameDisplay" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Winner count</label>
+                <input type="number" class="form-control" value="@pointsScheme.WinnerCount" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <div>
+                    <span class="app-pill @(pointsScheme.IsActive ? string.Empty : "app-pill-danger")">
+                        @pointsScheme.StatusDisplay
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Placing Points</h2>
+                    <p class="text-muted mb-0">
+                        Points are awarded based on final placing.
+                    </p>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var item in pointsScheme.Items)
+                    {
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="scoring-criterion-box h-100">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Placing</label>
+                                        <input type="text" class="form-control" value="@item.PlacingDisplay" disabled />
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Points awarded</label>
+                                        <input type="text" class="form-control" value="@item.PointsDisplay" disabled />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

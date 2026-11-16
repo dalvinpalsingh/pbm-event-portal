@@ -1,0 +1,411 @@
+﻿@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.Teams.DetailsModel
+@{
+    ViewData["Title"] = "Team Details";
+    var team = Model.Team;
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>Team Details</h1>
+    <p>
+        View participating team information and assigned Team Managers.
+    </p>
+
+    @if (team != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Teams/Index">
+                Back to Teams
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/Teams/Edit"
+               asp-route-id="@team.Id">
+                Edit Team
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Teams/Index">
+            Back to Teams
+        </a>
+    }
+</div>
+
+@if (team == null)
+{
+    <div class="app-alert app-alert-danger">
+        Team not found.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="app-card">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-1">@team.NameEnglish</h2>
+
+                        @if (!string.IsNullOrWhiteSpace(team.NameGurmukhi))
+                        {
+                            <p class="mb-0 text-muted">@team.NameGurmukhi</p>
+                        }
+                    </div>
+
+                    <span class="app-pill">@team.StatusDisplay</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Team ID</th>
+                                <td>@team.Id</td>
+                            </tr>
+                            <tr>
+                                <th>Code</th>
+                                <td>
+                                    <span class="app-pill">@team.Code</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>English Name</th>
+                                <td>@team.NameEnglish</td>
+                            </tr>
+                            <tr>
+                                <th>Gurmukhi Name</th>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(team.NameGurmukhi))
+                                    {
+                                        @team.NameGurmukhi
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>State</th>
+                                <td>@team.StateName (@team.StateCode)</td>
+                            </tr>
+                            <tr>
+                                <th>Region</th>
+                                <td>@team.RegionName (@team.RegionCode)</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>@team.StatusDisplay</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="app-card mt-3">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-1">Team Managers</h2>
+                        <p class="mb-0 text-muted">
+                            Users assigned to manage this team.
+                        </p>
+                    </div>
+
+                    <span class="app-pill">@team.TeamManagers.Count / 3</span>
+                </div>
+
+                @if (team.TeamManagers.Count == 0)
+                {
+                    <p class="text-muted mb-0">
+                        No Team Managers assigned yet.
+                    </p>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var manager in team.TeamManagers)
+                        {
+                            var removeModalId = $"removeTeamManagerModal-{manager.AssignmentId}";
+                            var removeModalLabelId = $"removeTeamManagerModalLabel-{manager.AssignmentId}";
+
+                            <div class="app-mini-card">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold">@manager.DisplayName</div>
+                                        <div class="text-muted small">@manager.Email</div>
+                                    </div>
+
+                                    <span class="app-pill">@manager.StatusDisplay</span>
+                                </div>
+
+                                <div class="small mt-2">
+                                    <div><span class="text-muted">Mobile:</span> @manager.MobileNumber</div>
+                                    <div><span class="text-muted">Verified:</span> @manager.VerifiedDisplay</div>
+                                    <div><span class="text-muted">Primary:</span> @manager.PrimaryDisplay</div>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                    <a class="btn btn-primary btn-sm"
+                                       asp-page="/Admin/UserProfiles/Details"
+                                       asp-route-id="@manager.UserId">
+                                        View User
+                                    </a>
+
+                                    <button type="button"
+                                            class="btn btn-danger btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#@removeModalId">
+                                        Remove from Team
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="modal fade" id="@removeModalId" tabindex="-1" aria-labelledby="@removeModalLabelId" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content app-result-modal app-result-modal-danger">
+                                        <div class="modal-header">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                                                <h2 class="modal-title fs-5" id="@removeModalLabelId">
+                                                    Remove Team Manager?
+                                                </h2>
+                                            </div>
+
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <p class="mb-2">
+                                                This will remove <strong>@manager.DisplayName</strong> from <strong>@team.NameEnglish</strong>.
+                                            </p>
+                                            <p class="mb-0 text-muted">
+                                                The user will keep the Team Manager role, but will no longer be assigned to this Team.
+                                            </p>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <form method="post"
+                                                  asp-page-handler="UnassignTeamManager"
+                                                  asp-route-id="@team.Id"
+                                                  asp-route-assignmentId="@manager.AssignmentId">
+                                                <button type="submit" class="btn btn-danger">
+                                                    Remove from Team
+                                                </button>
+                                            </form>
+
+                                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                                                Keep manager
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <hr class="my-4" />
+
+                <div>
+                    <h3 class="h5 mb-1">Assign Team Manager</h3>
+                    <p class="text-muted mb-3">
+                        Assign an existing active and verified Team Manager to this Team.
+                    </p>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="app-alert app-alert-danger">
+                            <div asp-validation-summary="All"></div>
+                        </div>
+                    }
+
+                    @if (team.TeamManagers.Count >= 3)
+                    {
+                        <div class="app-alert app-alert-warning mb-0">
+                            This Team already has the maximum of 3 Team Managers.
+                        </div>
+                    }
+                    else if (Model.EligibleTeamManagers.Count == 0)
+                    {
+                        <div class="app-alert app-alert-warning mb-0">
+                            No eligible unassigned Team Managers are currently available.
+                        </div>
+                    }
+                    else
+                    {
+                        <form method="post"
+                              asp-page-handler="AssignTeamManager"
+                              asp-route-id="@team.Id"
+                              class="d-flex flex-column gap-3">
+
+                            <div>
+                                <label asp-for="AssignTeamManagerInput.AssignmentId" class="form-label">
+                                    Team Manager
+                                </label>
+
+                                <select asp-for="AssignTeamManagerInput.AssignmentId" class="form-select">
+                                    <option value="">Select Team Manager...</option>
+
+                                    @foreach (var eligibleManager in Model.EligibleTeamManagers)
+                                    {
+                                        <option value="@eligibleManager.AssignmentId">
+                                            @eligibleManager.DisplayName (@eligibleManager.Email)
+                                        </option>
+                                    }
+                                </select>
+
+                                <span asp-validation-for="AssignTeamManagerInput.AssignmentId" class="text-danger"></span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    Assign Team Manager
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="app-card">
+                <h2>Audit Information</h2>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Created At</th>
+                                <td>@team.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            </tr>
+                            <tr>
+                                <th>Created By</th>
+                                <td>
+                                    @if (team.CreatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@team.CreatedByUser.Id">
+                                            @team.CreatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (team.CreatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@team.CreatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Updated At</th>
+                                <td>@(team.UpdatedAt?.ToString("dd MMM yyyy, hh:mm tt") ?? "-")</td>
+                            </tr>
+                            <tr>
+                                <th>Updated By</th>
+                                <td>
+                                    @if (team.UpdatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@team.UpdatedByUser.Id">
+                                            @team.UpdatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (team.UpdatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@team.UpdatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="teamDetailsResultModal" tabindex="-1" aria-labelledby="teamDetailsResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="teamDetailsResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("teamDetailsResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

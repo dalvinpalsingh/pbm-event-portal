@@ -1,0 +1,182 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.ScheduleItems.EditModel
+@{
+    ViewData["Title"] = "Edit Schedule Item";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Schedule Item</h1>
+    <p>Update schedule item details used for event coordination and publishing.</p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editScheduleItemForm">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.CompetitionYearId" class="form-label">Competition year <span class="app-required">*</span></label>
+                <select asp-for="Input.CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.CompetitionYearId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.ScheduleDate" class="form-label">Schedule date <span class="app-required">*</span></label>
+                <input asp-for="Input.ScheduleDate" type="date" class="form-control" required />
+                <span asp-validation-for="Input.ScheduleDate" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="Input.StartTime" class="form-label">Start time <span class="app-required">*</span></label>
+                <input asp-for="Input.StartTime" type="time" class="form-control" required />
+                <span asp-validation-for="Input.StartTime" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-2">
+                <label asp-for="Input.EndTime" class="form-label">End time <span class="app-required">*</span></label>
+                <input asp-for="Input.EndTime" type="time" class="form-control" required />
+                <span asp-validation-for="Input.EndTime" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.ReportingTime" class="form-label">Reporting time</label>
+                <input asp-for="Input.ReportingTime" type="time" class="form-control" />
+                <span asp-validation-for="Input.ReportingTime" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Input.DisplayTitle" class="form-label">Display title <span class="app-required">*</span></label>
+                <input asp-for="Input.DisplayTitle" class="form-control" maxlength="200" required />
+                <span asp-validation-for="Input.DisplayTitle" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.ScheduleType" class="form-label">Schedule type <span class="app-required">*</span></label>
+                <select asp-for="Input.ScheduleType" asp-items="Model.ScheduleTypeOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.ScheduleType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.Status" class="form-label">Status <span class="app-required">*</span></label>
+                <select asp-for="Input.Status" asp-items="Model.StatusOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.Status" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Published</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsPublished" class="form-check-input" />
+                    <label asp-for="Input.IsPublished" class="form-check-label">Published</label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.CompetitionCategoryId" class="form-label">Competition category</label>
+                <select asp-for="Input.CompetitionCategoryId" asp-items="Model.CompetitionCategoryOptions" class="form-select"></select>
+                <span asp-validation-for="Input.CompetitionCategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.VenueId" class="form-label">Venue</label>
+                <select asp-for="Input.VenueId" asp-items="Model.VenueOptions" class="form-select"></select>
+                <span asp-validation-for="Input.VenueId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.SessionGroup" class="form-label">Session group</label>
+                <input asp-for="Input.SessionGroup" class="form-control" maxlength="100" />
+                <span asp-validation-for="Input.SessionGroup" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.SequenceNo" class="form-label">Sequence number</label>
+                <input asp-for="Input.SequenceNo" class="form-control" min="1" step="1" />
+                <span asp-validation-for="Input.SequenceNo" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label">Notes</label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelEditScheduleItemModal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetEditScheduleItemModal">Reset</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Schedule Item</button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editScheduleItemResultModal" tabindex="-1" aria-labelledby="editScheduleItemResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content app-result-modal @modalCssClass">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2"><i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i><h2 class="modal-title fs-5" id="editScheduleItemResultModalLabel">@Model.ResultTitle</h2></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">@Model.ResultMessage</p>
+                @if (serverErrors.Count > 0)
+                {
+                    <ul class="mb-0">@foreach (var error in serverErrors) { <li>@error</li> }</ul>
+                }
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-danger" asp-page="/Admin/ScheduleItems/Index">View All Schedule Items</a>
+                @if (!resultIsSuccess) { <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay, I’ll fix it</button> }
+            </div>
+        </div></div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditScheduleItemModal" tabindex="-1" aria-labelledby="resetEditScheduleItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content app-result-modal app-result-modal-danger">
+        <div class="modal-header"><div class="d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i><h2 class="modal-title fs-5" id="resetEditScheduleItemModalLabel">Reset changes?</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">This will reset the schedule item fields back to the last loaded values.</div>
+        <div class="modal-footer"><button type="button" class="btn btn-primary" data-bs-dismiss="modal">Keep editing</button><button type="button" class="btn btn-danger" id="confirmResetButton">Reset changes</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="cancelEditScheduleItemModal" tabindex="-1" aria-labelledby="cancelEditScheduleItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content app-result-modal app-result-modal-danger">
+        <div class="modal-header"><div class="d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i><h2 class="modal-title fs-5" id="cancelEditScheduleItemModalLabel">Cancel editing schedule item?</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">Any unsaved changes on this page will be lost.</div>
+        <div class="modal-footer"><a class="btn btn-danger" asp-page="/Admin/ScheduleItems/Details" asp-route-id="@Model.Input.Id">Cancel editing</a><button type="button" class="btn btn-primary" data-bs-dismiss="modal">Stay here</button></div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("editScheduleItemForm");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+            confirmResetButton?.addEventListener("click", () => {
+                form?.reset();
+                bootstrap.Modal.getInstance(document.getElementById("resetEditScheduleItemModal"))?.hide();
+            });
+        })();
+    </script>
+    @if (shouldShowResultModal)
+    {
+        <script>document.addEventListener("DOMContentLoaded", () => { const modalElement = document.getElementById("editScheduleItemResultModal"); if (modalElement) new bootstrap.Modal(modalElement).show(); });</script>
+    }
+}

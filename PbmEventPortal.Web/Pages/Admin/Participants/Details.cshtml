@@ -1,0 +1,184 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.Participants.DetailsModel
+@{
+    ViewData["Title"] = "Participant Details";
+    var participant = Model.Participant!;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Participant Details</h1>
+    <p>Review participant identity, contact, team, Tahap, guardian, status, audit information, and competition entries.</p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Participants/Index">
+            Back to Participants
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/Participants/Edit" asp-route-id="@participant.Id">
+            Edit Participant
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="app-card">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="text-muted small">Competition year</div>
+                    <div class="fw-semibold">@participant.CompetitionYearDisplayName</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Team</div>
+                    <div class="fw-semibold">@participant.TeamDisplay</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Status</div>
+                    <span class="app-pill @(participant.IsActive ? string.Empty : "app-pill-danger")">@participant.StatusDisplay</span>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Full name as per ID</div>
+                    <div class="fw-semibold">@participant.FullNameAsPerId</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Full name in Gurmukhi</div>
+                    <div class="fw-semibold">@participant.FullNameGurmukhi</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">ID type</div>
+                    <div class="fw-semibold">@participant.IdType</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">ID number</div>
+                    <div class="fw-semibold">@participant.IdDisplay</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Passport expiry</div>
+                    <div class="fw-semibold">@participant.PassportExpiryDisplay</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Gender</div>
+                    <div class="fw-semibold">@participant.GenderDisplay</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Date of birth</div>
+                    <div class="fw-semibold">@participant.DateOfBirth.ToString("yyyy-MM-dd")</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Tahap</div>
+                    <span class="app-pill">@participant.TahapCode</span>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Mobile number</div>
+                    <div class="fw-semibold">@participant.MobileDisplay</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Email</div>
+                    <div class="fw-semibold">@participant.EmailDisplay</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Parent / guardian name</div>
+                    <div class="fw-semibold">@participant.ParentGuardianName</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Parent / guardian mobile</div>
+                    <div class="fw-semibold">@participant.ParentGuardianMobile</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-card mt-3">
+            <h2>Audit information</h2>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-muted small">Created at</div>
+                    <div>@participant.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Created by</div>
+                    <div>@participant.CreatedByDisplay</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Updated at</div>
+                    <div>@(participant.UpdatedAt.HasValue ? participant.UpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "Not updated yet")</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Updated by</div>
+                    <div>@participant.UpdatedByDisplay</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="app-card">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h2 class="mb-1">Registration Entries</h2>
+                    <p class="mb-0 text-muted">Competition entries linked to this participant.</p>
+                </div>
+                <span class="app-pill">@participant.RegistrationEntries.Count</span>
+            </div>
+
+            <div class="mb-3">
+                <a class="btn btn-primary btn-sm" asp-page="/Admin/RegistrationEntries/Create">
+                    Add Registration Entry
+                </a>
+            </div>
+
+            @if (participant.RegistrationEntries.Count == 0)
+            {
+                <p class="text-muted mb-0">No registration entries linked yet.</p>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var entry in participant.RegistrationEntries)
+                    {
+                        <div class="app-mini-card">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="fw-semibold">@entry.CompetitionDisplay</div>
+                                    <div class="text-muted small">@entry.CategoryDisplay / @entry.EntryType</div>
+                                </div>
+                                <span class="app-pill @(entry.IsActive ? string.Empty : "app-pill-danger")">@entry.StatusDisplay</span>
+                            </div>
+
+                            <div class="mt-2 small text-muted">
+                                Participant order: @entry.ParticipantOrder
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(entry.OtherParticipantsDisplay))
+                            {
+                                <div class="mt-1 small text-muted">
+                                    Other participants: @entry.OtherParticipantsDisplay
+                                </div>
+                            }
+
+                            <div class="mt-2">
+                                <a class="btn btn-primary btn-sm" asp-page="/Admin/RegistrationEntries/Details" asp-route-id="@entry.Id">
+                                    View Entry
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

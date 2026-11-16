@@ -1,0 +1,27 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="app-page-header text-center">
+            <p class="app-eyebrow">Authorization</p>
+            <h1>Access Denied</h1>
+            <p>
+                You are signed in, but your account does not have permission to access this page.
+            </p>
+        </div>
+
+        <div class="app-card text-center">
+            <p class="text-muted">
+                Please contact a System Admin if you believe you should have access.
+            </p>
+
+            <a class="btn btn-primary" asp-page="/Index">
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>

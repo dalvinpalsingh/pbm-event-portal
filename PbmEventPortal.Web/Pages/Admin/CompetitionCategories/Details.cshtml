@@ -1,0 +1,241 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.CompetitionCategories.DetailsModel
+@{
+    ViewData["Title"] = "Competition Category Details";
+    var competitionCategory = Model.CompetitionCategory;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Competition Category Details</h1>
+    <p>
+        View category rules for this competition.
+    </p>
+
+    @if (competitionCategory != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionCategories/Index">
+                Back to Competition Categories
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/CompetitionCategories/Edit"
+               asp-route-id="@competitionCategory.Id">
+                Edit
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionCategories/Index">
+            Back to Competition Categories
+        </a>
+    }
+</div>
+
+@if (competitionCategory == null)
+{
+    <div class="app-alert app-alert-danger">
+        Competition category not found.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="app-card">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-1">@competitionCategory.CompetitionDisplay - @competitionCategory.CategoryDisplay</h2>
+                        <p class="mb-0 text-muted">
+                            @competitionCategory.CompetitionYearNo · @competitionCategory.EventTypeDisplay
+                        </p>
+                    </div>
+
+                    <span class="app-pill">@competitionCategory.StatusDisplay</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Competition Category ID</th>
+                                <td>@competitionCategory.Id</td>
+                            </tr>
+                            <tr>
+                                <th>Competition</th>
+                                <td>
+                                    <a asp-page="/Admin/Competitions/Details" asp-route-id="@competitionCategory.CompetitionId">
+                                        @competitionCategory.CompetitionDisplay
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Event Type</th>
+                                <td>@competitionCategory.EventTypeDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Category</th>
+                                <td>
+                                    <span class="app-pill">@competitionCategory.CategoryDisplay</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Category Code</th>
+                                <td>@competitionCategory.CategoryCode</td>
+                            </tr>
+                            <tr>
+                                <th>Grouping Type</th>
+                                <td>@competitionCategory.GroupingType</td>
+                            </tr>
+                            <tr>
+                                <th>Age Range</th>
+                                <td>@competitionCategory.AgeRangeDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Sort Order</th>
+                                <td>@competitionCategory.SortOrder</td>
+                            </tr>
+                            <tr>
+                                <th>Winner Count</th>
+                                <td>@competitionCategory.WinnerCount</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>@competitionCategory.StatusDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Notes</th>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(competitionCategory.Notes))
+                                    {
+                                        @competitionCategory.Notes
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="app-card mt-3">
+                <h2>Participation Rules</h2>
+                <p class="text-muted">
+                    Individual and team event settings saved for this category.
+                </p>
+
+                @if (competitionCategory.EventType == "INDIVIDUAL")
+                {
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="app-mini-card h-100">
+                                <div class="text-muted small">Max Participants Per Team</div>
+                                <div class="fs-4 fw-semibold">@competitionCategory.IndividualMaxParticipantsDisplay</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (competitionCategory.EventType == "TEAM")
+                {
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="app-mini-card h-100">
+                                <div class="text-muted small">Team Size</div>
+                                <div class="fs-4 fw-semibold">@competitionCategory.TeamSizeDisplay</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="app-mini-card h-100">
+                                <div class="text-muted small">Max Team Entries Per Team</div>
+                                <div class="fs-4 fw-semibold">@competitionCategory.TeamMaxEntriesDisplay</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="app-mini-card h-100">
+                                <div class="text-muted small">Gender Restrictions</div>
+                                <div class="fs-4 fw-semibold">@competitionCategory.TeamGenderRestrictionsDisplay</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="app-mini-card h-100">
+                                <div class="text-muted small">Younger Substitution Allowed</div>
+                                <div class="fs-4 fw-semibold">@competitionCategory.YoungerSubstitutionDisplay</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No participation rule summary available.</p>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="app-card">
+                <h2>Audit Information</h2>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Created At</th>
+                                <td>@competitionCategory.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            </tr>
+                            <tr>
+                                <th>Created By</th>
+                                <td>
+                                    @if (competitionCategory.CreatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@competitionCategory.CreatedByUser.Id">
+                                            @competitionCategory.CreatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (competitionCategory.CreatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@competitionCategory.CreatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Updated At</th>
+                                <td>@(competitionCategory.UpdatedAt?.ToString("dd MMM yyyy, hh:mm tt") ?? "-")</td>
+                            </tr>
+                            <tr>
+                                <th>Updated By</th>
+                                <td>
+                                    @if (competitionCategory.UpdatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@competitionCategory.UpdatedByUser.Id">
+                                            @competitionCategory.UpdatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (competitionCategory.UpdatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@competitionCategory.UpdatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}

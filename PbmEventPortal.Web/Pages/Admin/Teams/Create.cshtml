@@ -1,0 +1,304 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.Admin.Teams.CreateModel
+@{
+    ViewData["Title"] = "Create Team";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Team management</p>
+    <h1>Create Team</h1>
+    <p>
+        Create a participating Punjabi Education Centre team.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createTeamForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Code" class="form-label">
+                    Team code <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.Code"
+                       class="form-control"
+                       id="teamCodeInput"
+                       placeholder="TEAM_EXAMPLE"
+                       required />
+                <span asp-validation-for="Input.Code" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Input.NameEnglish" class="form-label">
+                    English name <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.NameEnglish"
+                       class="form-control"
+                       required />
+                <span asp-validation-for="Input.NameEnglish" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Input.NameGurmukhi" class="form-label"></label>
+                <input asp-for="Input.NameGurmukhi" class="form-control" />
+                <span asp-validation-for="Input.NameGurmukhi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.StateId" class="form-label">
+                    State <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.StateId" asp-items="Model.StateOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.StateId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.RegionId" class="form-label">
+                    Region <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.RegionId" asp-items="Model.RegionOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.RegionId" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelCreateTeamModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetCreateTeamModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Create Team
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createTeamResultModal" tabindex="-1" aria-labelledby="createTeamResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createTeamResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    @if (resultIsSuccess)
+                    {
+                        <a class="btn btn-outline-danger" asp-page="/Admin/Teams/Index">
+                            View All Teams
+                        </a>
+
+                        <a class="btn btn-primary"
+                           asp-page="/Admin/Teams/Details"
+                           asp-route-id="@Model.CreatedTeamId">
+                            View This Team
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateTeamModal" tabindex="-1" aria-labelledby="resetCreateTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateTeamModalLabel">
+                        Reset form?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will clear all entered team details and return the form to its default state.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateTeamModal" tabindex="-1" aria-labelledby="cancelCreateTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateTeamModalLabel">
+                        Cancel creating team?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any details entered on this page will not be saved.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/Teams/Index">
+                    Cancel creation
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const form = document.getElementById("createTeamForm");
+            const teamCodeInput = document.getElementById("teamCodeInput");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function normalizeTeamCode() {
+                if (!teamCodeInput) {
+                    return;
+                }
+
+                teamCodeInput.value = teamCodeInput.value
+                    .trim()
+                    .toUpperCase()
+                    .replace(/\s+/g, "_");
+            }
+
+            function clearValidationMessages() {
+                document.querySelectorAll(".field-validation-error, .field-validation-valid").forEach((element) => {
+                    element.textContent = "";
+                });
+
+                document.querySelectorAll(".input-validation-error").forEach((element) => {
+                    element.classList.remove("input-validation-error");
+                });
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+
+                if (teamCodeInput) {
+                    teamCodeInput.value = "";
+                }
+
+                clearValidationMessages();
+
+                const resetModalElement = document.getElementById("resetCreateTeamModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            teamCodeInput?.addEventListener("blur", normalizeTeamCode);
+
+            form?.addEventListener("submit", () => {
+                normalizeTeamCode();
+            });
+
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createTeamResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

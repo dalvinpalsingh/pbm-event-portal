@@ -1,0 +1,87 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.CompetitionCategories.IndexModel
+@{
+    ViewData["Title"] = "Competition Categories";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Competition Categories</h1>
+    <p>
+        Manage category rules linked to competitions, including quotas, team size, substitutions, and winner counts.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/CompetitionCategories/Create">
+            Add Competition Category
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.CompetitionCategories.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No competition categories have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Competition</th>
+                        <th>Event Type</th>
+                        <th>Category</th>
+                        <th>Sort</th>
+                        <th>Winners</th>
+                        <th>Individual Max Participants</th>
+                        <th>Team Size</th>
+                        <th>Team Entries</th>
+                        <th>Gender Restrictions</th>
+                        <th>Younger Substitution</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var competitionCategory in Model.CompetitionCategories)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@competitionCategory.CompetitionDisplay</div>
+                                <div class="text-muted small">@competitionCategory.CompetitionYearNo</div>
+                            </td>
+                            <td>@competitionCategory.EventTypeDisplay</td>
+                            <td>
+                                <span class="app-pill">@competitionCategory.CategoryName</span>
+                            </td>
+                            <td>@competitionCategory.SortOrder</td>
+                            <td>@competitionCategory.WinnerCount</td>
+                            <td>@competitionCategory.IndividualMaxParticipantsDisplay</td>
+                            <td>@competitionCategory.TeamSizeDisplay</td>
+                            <td>@competitionCategory.TeamMaxEntriesDisplay</td>
+                            <td>@competitionCategory.TeamGenderRestrictionsDisplay</td>
+                            <td>@competitionCategory.YoungerSubstitutionDisplay</td>
+                            <td>
+                                <span class="app-pill">@competitionCategory.StatusDisplay</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/CompetitionCategories/Details"
+                                   asp-route-id="@competitionCategory.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,76 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.JudgeAssignments.IndexModel
+@{
+    ViewData["Title"] = "Judge Assignments";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Judge Assignments</h1>
+    <p>
+        Assign judges to competition categories, optional schedule sessions, and optional scoring criteria.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/JudgeAssignments/Create">
+            Assign Judge
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.JudgeAssignments.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No judge assignments have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Competition</th>
+                        <th>Category</th>
+                        <th>Judge</th>
+                        <th>Criterion</th>
+                        <th>Schedule</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var assignment in Model.JudgeAssignments)
+                    {
+                        <tr>
+                            <td>@assignment.CompetitionYearDisplay</td>
+                            <td>@assignment.CompetitionDisplay</td>
+                            <td><span class="app-pill">@assignment.CategoryDisplay</span></td>
+                            <td>@assignment.JudgeDisplay</td>
+                            <td>@assignment.CriterionDisplay</td>
+                            <td>@assignment.ScheduleDisplay</td>
+                            <td>
+                                <span class="app-pill @(assignment.IsActive ? string.Empty : "app-pill-danger")">
+                                    @assignment.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/JudgeAssignments/Details"
+                                   asp-route-id="@assignment.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

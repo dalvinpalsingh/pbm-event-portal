@@ -1,0 +1,120 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.Admin.UserProfiles.IndexModel
+@{
+    ViewData["Title"] = "User Profiles";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>User Profiles</h1>
+    <p>
+        View system users who can access or manage the PBM Event Portal.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/UserProfiles/Create">
+            Create User
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Registered Users</h2>
+            <p class="mb-0 text-muted">
+                Total users: @Model.Users.Count
+            </p>
+        </div>
+
+        <span class="app-pill">Read-only for now</span>
+    </div>
+
+    @if (Model.Users.Count == 0)
+    {
+        <div class="app-alert app-alert-success">
+            No user profiles found.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>ID</th>
+                        <th>Contact</th>
+                        <th>Gender</th>
+                        <th>Date of Birth</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@user.FullNameAsPerId</div>
+
+                                @if (!string.IsNullOrWhiteSpace(user.FullNameGurmukhi))
+                                {
+                                    <div class="text-muted">@user.FullNameGurmukhi</div>
+                                }
+                            </td>
+
+                            <td>
+                                <div>@user.IdType</div>
+                                <div class="text-muted">@user.IdNumber</div>
+                            </td>
+
+                            <td>
+                                <div>@user.Email</div>
+                                <div class="text-muted">@user.MobileNumber</div>
+
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a class="btn btn-success btn-sm" href="@user.WhatsAppUrl" target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>
+                                        WhatsApp
+                                    </a>
+
+                                    <a class="btn btn-primary btn-sm" href="@user.CallUrl">
+                                        <i class="bi bi-telephone-fill me-1" aria-hidden="true"></i>
+                                        Call
+                                    </a>
+                                </div>
+                            </td>
+
+                            <td>@user.GenderDisplay</td>
+
+                            <td>@user.DateOfBirth.ToString("dd MMM yyyy")</td>
+
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="app-pill">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="app-pill">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-outline-primary btn-sm"
+                                   asp-page="/Admin/UserProfiles/Details"
+                                   asp-route-id="@user.Id">
+                                    Details
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

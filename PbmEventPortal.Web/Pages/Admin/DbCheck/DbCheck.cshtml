@@ -1,0 +1,49 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.DbCheckModel
+@{
+    ViewData["Title"] = "Database Check";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">System check</p>
+    <h1>Database Connection Check</h1>
+    <p>
+        Confirms that the web app can connect to PostgreSQL and query real PBM tables.
+    </p>
+</div>
+
+<div class="app-card">
+    <div class="app-alert app-alert-success">
+        @Model.StatusMessage
+    </div>
+
+    @if (Model.DatabaseName != null)
+    {
+        <div class="table-responsive mt-3">
+            <table class="table app-table">
+                <tbody>
+                    <tr>
+                        <th>Database</th>
+                        <td>@Model.DatabaseName</td>
+                    </tr>
+                    <tr>
+                        <th>Connected User</th>
+                        <td>@Model.DatabaseUser</td>
+                    </tr>
+                    <tr>
+                        <th>Regions</th>
+                        <td>@Model.RegionCount</td>
+                    </tr>
+                    <tr>
+                        <th>States</th>
+                        <td>@Model.StateCount</td>
+                    </tr>
+                    <tr>
+                        <th>Audit Logs</th>
+                        <td>@Model.AuditLogCount</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

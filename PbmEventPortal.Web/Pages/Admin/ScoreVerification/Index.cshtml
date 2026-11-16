@@ -1,0 +1,283 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.ScoreVerification.IndexModel
+@{
+    ViewData["Title"] = "Score Verification";
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Score Verification</p>
+    <h1>Score Verification</h1>
+    <p>
+        Review post-submit score changes in score-sheet format and mark verified score sheets as ready for the next stage.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+    </div>
+</div>
+
+@if (Model.PendingSheets.Count == 0)
+{
+    <div class="app-card">
+        <h2>No Pending Score Changes</h2>
+        <p class="text-muted mb-0">
+            There are no score sheets with pending post-submit score changes.
+        </p>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="app-card h-100">
+                <div class="text-muted small">Score Sheets Pending</div>
+                <div class="display-6 fw-semibold">@Model.PendingSheets.Count</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="app-card h-100">
+                <div class="text-muted small">Entries Pending</div>
+                <div class="display-6 fw-semibold">@Model.PendingSheets.Sum(x => x.PendingEntries)</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="app-card h-100">
+                <div class="text-muted small">Cells Pending</div>
+                <div class="display-6 fw-semibold">@Model.PendingSheets.Sum(x => x.PendingCells)</div>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var sheet in Model.PendingSheets)
+    {
+        var criteriaTotalMax = sheet.Criteria.Where(x => x.MaxScore.HasValue).Sum(x => x.MaxScore!.Value);
+        var totalLabel = sheet.HasTeamEntries ? "Sub-total" : "Total";
+        var totalHeader = criteriaTotalMax > 0 ? $"{totalLabel} / {criteriaTotalMax:0.##}" : totalLabel;
+        var teamGroups = sheet.Rows.GroupBy(x => x.RegistrationEntryId).ToList();
+
+        <div class="app-card mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2>@sheet.CompetitionCode - @sheet.CompetitionName</h2>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <span class="app-pill">@sheet.CategoryCode / @sheet.EventType</span>
+                        <span class="app-pill">@sheet.ScoreSheetStatus</span>
+                        <span class="app-pill">V@(sheet.VersionNo)</span>
+                    </div>
+                </div>
+                <form method="post" asp-page-handler="VerifyScoreSheet">
+                    <input type="hidden" name="scoreSheetId" value="@sheet.ScoreSheetId" />
+                    <button type="submit" class="btn btn-success">
+                        Verify All Pending Changes
+                    </button>
+                </form>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="text-muted small">Active Entries</div>
+                    <div class="fw-semibold">@sheet.ActiveScoreEntries</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Entries Pending</div>
+                    <div class="fw-semibold">@sheet.PendingEntries</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Cells Pending</div>
+                    <div class="fw-semibold">@sheet.PendingCells</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small">Latest Change</div>
+                    <div class="fw-semibold">@(sheet.LatestPendingChangeAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">No.</th>
+                            <th>Participant Name</th>
+                            <th>Team</th>
+                            @foreach (var criterion in sheet.Criteria)
+                            {
+                                <th>@criterion.CriterionNo. @criterion.CriterionName @(criterion.MaxScore.HasValue ? $"/ {criterion.MaxScore.Value:0.##}" : string.Empty)</th>
+                            }
+                            <th>@totalHeader</th>
+                            @if (sheet.HasTeamEntries)
+                            {
+                                <th>Team Total</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (sheet.HasTeamEntries)
+                        {
+                            @for (var teamIndex = 0; teamIndex < teamGroups.Count; teamIndex++)
+                            {
+                                var teamRows = teamGroups[teamIndex].ToList();
+                                var rowSpan = teamRows.Count;
+                                var teamDisplayRow = teamRows.First();
+
+                                @for (var memberIndex = 0; memberIndex < teamRows.Count; memberIndex++)
+                                {
+                                    var row = teamRows[memberIndex];
+                                    <tr>
+                                        @if (memberIndex == 0)
+                                        {
+                                            <td class="fw-semibold align-top" rowspan="@rowSpan">@(teamIndex + 1)</td>
+                                        }
+                                        <td>
+                                            <div class="fw-semibold">@row.ParticipantName</div>
+                                        </td>
+                                        @if (memberIndex == 0)
+                                        {
+                                            <td class="align-top" rowspan="@rowSpan">
+                                                <div class="fw-semibold">@teamDisplayRow.TeamCode</div>
+                                            </td>
+                                        }
+                                        @foreach (var cell in row.Cells)
+                                        {
+                                            <td class="@(cell.IsPendingVerification ? "table-warning" : string.Empty)">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="fw-semibold">@(cell.ScoreValue?.ToString("0.##") ?? "-")</span>
+                                                    @if (cell.IsPendingVerification)
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-outline-warning btn-sm py-0 px-1"
+                                                                data-bs-toggle="popover"
+                                                                data-bs-trigger="focus"
+                                                                data-bs-placement="auto"
+                                                                data-bs-html="true"
+                                                                data-bs-title="Pending verification"
+                                                                data-bs-content="@BuildPendingCellPopoverContent(cell)"
+                                                                aria-label="View pending verification details">
+                                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        }
+                                        <td class="fw-semibold">@row.SubTotal.ToString("0.##")</td>
+                                        @if (memberIndex == 0)
+                                        {
+                                            <td class="fw-semibold align-top" rowspan="@rowSpan">@teamDisplayRow.TeamTotal.ToString("0.##")</td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            @for (var rowIndex = 0; rowIndex < sheet.Rows.Count; rowIndex++)
+                            {
+                                var row = sheet.Rows[rowIndex];
+                                <tr>
+                                    <td class="fw-semibold align-top">@(rowIndex + 1)</td>
+                                    <td>
+                                        <div class="fw-semibold">@row.ParticipantName</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@row.TeamCode</div>
+                                    </td>
+                                    @foreach (var cell in row.Cells)
+                                    {
+                                        <td class="@(cell.IsPendingVerification ? "table-warning" : string.Empty)">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="fw-semibold">@(cell.ScoreValue?.ToString("0.##") ?? "-")</span>
+                                                @if (cell.IsPendingVerification)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-warning btn-sm py-0 px-1"
+                                                            data-bs-toggle="popover"
+                                                            data-bs-trigger="focus"
+                                                            data-bs-placement="auto"
+                                                            data-bs-html="true"
+                                                            data-bs-title="Pending verification"
+                                                            data-bs-content="@BuildPendingCellPopoverContent(cell)"
+                                                            aria-label="View pending verification details">
+                                                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    }
+                                    <td class="fw-semibold">@row.SubTotal.ToString("0.##")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="scoreVerificationResultModal" tabindex="-1" aria-labelledby="scoreVerificationResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="scoreVerificationResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">@Model.ResultMessage</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('[data-bs-toggle="popover"]').forEach(element => new bootstrap.Popover(element));
+
+            const modalElement = document.getElementById("scoreVerificationResultModal");
+            if (modalElement) new bootstrap.Modal(modalElement).show();
+        });
+    </script>
+}
+
+@functions {
+    private static string BuildPendingCellPopoverContent(ScoreVerificationScoreCellRow cell)
+    {
+        var lines = new List<string>
+        {
+            $"<div><span class='text-muted'>Previous:</span> {Encode(cell.PreviousScoreValue?.ToString("0.##") ?? "-")}</div>",
+            $"<div><span class='text-muted'>Changed by:</span> {Encode(cell.OverrideByName ?? "-")}</div>",
+            $"<div><span class='text-muted'>Changed at:</span> {Encode(cell.OverrideAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")}</div>"
+        };
+
+        if (!string.IsNullOrWhiteSpace(cell.Notes))
+        {
+            lines.Add($"<div><span class='text-muted'>Remarks:</span> {Encode(cell.Notes)}</div>");
+        }
+
+        if (!string.IsNullOrWhiteSpace(cell.OverrideReason))
+        {
+            lines.Add($"<div class='text-muted mt-1'>{Encode(cell.OverrideReason)}</div>");
+        }
+
+        return string.Join(string.Empty, lines);
+    }
+
+    private static string Encode(string value)
+    {
+        return System.Net.WebUtility.HtmlEncode(value);
+    }
+}
