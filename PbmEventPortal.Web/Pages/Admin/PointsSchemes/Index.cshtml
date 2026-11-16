@@ -1,0 +1,82 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.PointsSchemes.IndexModel
+@{
+    ViewData["Title"] = "Points Schemes";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Points Schemes</h1>
+    <p>
+        Review the points awarded for competition placings, including default winner-count schemes used for results calculation.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/PointsSchemes/Create">
+            Add Points Scheme
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.PointsSchemes.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No points schemes have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Scheme</th>
+                        <th>Winners</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var scheme in Model.PointsSchemes)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@scheme.SchemeNameDisplay</div>
+                                <div class="text-muted small">@scheme.SchemeName</div>
+                            </td>
+                            <td>@scheme.WinnerCount</td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var item in scheme.Items)
+                                    {
+                                        <span class="app-pill">
+                                            @item.PlacingDisplay: @item.PointsDisplay
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <span class="app-pill @(scheme.IsActive ? string.Empty : "app-pill-danger")">
+                                    @scheme.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/PointsSchemes/Details"
+                                   asp-route-id="@scheme.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

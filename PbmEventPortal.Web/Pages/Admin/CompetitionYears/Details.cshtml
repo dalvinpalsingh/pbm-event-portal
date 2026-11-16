@@ -1,0 +1,192 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.CompetitionYears.DetailsModel
+@{
+    ViewData["Title"] = "Competition Year Details";
+    var competitionYear = Model.CompetitionYear;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>Competition Year Details</h1>
+    <p>
+        View PBM event year setup information and related setup progress.
+    </p>
+
+    @if (competitionYear != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionYears/Index">
+                Back to Competition Years
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/CompetitionYears/Edit"
+               asp-route-id="@competitionYear.Id">
+                Edit Competition Year
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionYears/Index">
+            Back to Competition Years
+        </a>
+    }
+</div>
+
+@if (competitionYear == null)
+{
+    <div class="app-alert app-alert-danger">
+        Competition year not found.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="app-card">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-1">@competitionYear.DisplayName</h2>
+                        <p class="mb-0 text-muted">PBM @competitionYear.YearNo</p>
+                    </div>
+
+                    <span class="app-pill">@competitionYear.StatusDisplay</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Competition Year ID</th>
+                                <td>@competitionYear.Id</td>
+                            </tr>
+                            <tr>
+                                <th>Year</th>
+                                <td>
+                                    <span class="app-pill">@competitionYear.YearNo</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Display Name</th>
+                                <td>@competitionYear.DisplayName</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Opens</th>
+                                <td>@competitionYear.RegistrationOpenDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Closes</th>
+                                <td>@competitionYear.RegistrationCloseDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Window</th>
+                                <td>@competitionYear.RegistrationWindowDisplay</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>@competitionYear.StatusDisplay</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="app-card mt-3">
+                <h2>Setup Progress</h2>
+                <p class="text-muted">
+                    Summary of related setup records for this competition year.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="app-mini-card h-100">
+                            <div class="text-muted small">Competitions</div>
+                            <div class="fs-4 fw-semibold">@competitionYear.CompetitionCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="app-mini-card h-100">
+                            <div class="text-muted small">Participants</div>
+                            <div class="fs-4 fw-semibold">@competitionYear.ParticipantCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="app-mini-card h-100">
+                            <div class="text-muted small">Venues</div>
+                            <div class="fs-4 fw-semibold">@competitionYear.VenueCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="app-mini-card h-100">
+                            <div class="text-muted small">Schedule Items</div>
+                            <div class="fs-4 fw-semibold">@competitionYear.ScheduleItemCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="app-card">
+                <h2>Audit Information</h2>
+
+                <div class="table-responsive">
+                    <table class="table app-table align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Created At</th>
+                                <td>@competitionYear.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            </tr>
+                            <tr>
+                                <th>Created By</th>
+                                <td>
+                                    @if (competitionYear.CreatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@competitionYear.CreatedByUser.Id">
+                                            @competitionYear.CreatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (competitionYear.CreatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@competitionYear.CreatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Updated At</th>
+                                <td>@(competitionYear.UpdatedAt?.ToString("dd MMM yyyy, hh:mm tt") ?? "-")</td>
+                            </tr>
+                            <tr>
+                                <th>Updated By</th>
+                                <td>
+                                    @if (competitionYear.UpdatedByUser != null)
+                                    {
+                                        <a asp-page="/Admin/UserProfiles/Details" asp-route-id="@competitionYear.UpdatedByUser.Id">
+                                            @competitionYear.UpdatedByUser.DisplayName
+                                        </a>
+                                    }
+                                    else if (competitionYear.UpdatedBy != null)
+                                    {
+                                        <span class="text-muted">Unknown user (@competitionYear.UpdatedBy)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}

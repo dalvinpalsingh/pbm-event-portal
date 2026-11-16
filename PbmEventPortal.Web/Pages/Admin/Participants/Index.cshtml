@@ -1,0 +1,79 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.Participants.IndexModel
+@{
+    ViewData["Title"] = "Participants";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Participants</h1>
+    <p>
+        Manage participant profiles for PBM competition years, teams, Tahap groups, and registration records.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/Participants/Create">
+            Add Participant
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.Participants.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No participants have been registered yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Name</th>
+                        <th>Team</th>
+                        <th>ID</th>
+                        <th>Gender</th>
+                        <th>Tahap</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var participant in Model.Participants)
+                    {
+                        <tr>
+                            <td>@participant.CompetitionYearDisplayName</td>
+                            <td>
+                                <div class="fw-semibold">@participant.FullNameAsPerId</div>
+                                <div class="text-muted small">@participant.FullNameGurmukhi</div>
+                            </td>
+                            <td>@participant.TeamDisplay</td>
+                            <td>@participant.IdDisplay</td>
+                            <td>@participant.GenderDisplay</td>
+                            <td><span class="app-pill">@participant.TahapCode</span></td>
+                            <td>
+                                <span class="app-pill @(participant.IsActive ? string.Empty : "app-pill-danger")">
+                                    @participant.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/Participants/Details"
+                                   asp-route-id="@participant.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

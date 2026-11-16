@@ -1,0 +1,440 @@
+@page "{id:guid}"
+@using System.Text.Json
+@model PbmEventPortal.Web.Pages.Admin.CompetitionScoringCriteria.EditModel
+@{
+    ViewData["Title"] = "Edit Scoring Criteria";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+
+    var criteriaJson = JsonSerializer.Serialize(
+        Model.Input.Criteria,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Scoring Criteria</h1>
+    <p>
+        Update criterion names, max scores, and active status for a competition.
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editScoringCriteriaForm">
+        <input type="hidden" asp-for="Input.SourceScoringCriterionId" />
+        <input type="hidden" asp-for="Input.CompetitionId" />
+        <input type="hidden" asp-for="Input.CompetitionDisplay" />
+        <input type="hidden" asp-for="Input.CompetitionYearNo" />
+        <input type="hidden" asp-for="Input.CompetitionCode" />
+        <input type="hidden" asp-for="Input.CompetitionType" />
+        <input type="hidden" asp-for="Input.CompetitionCriteriaCount" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Competition</label>
+                <input type="text" class="form-control" value="@Model.Input.CompetitionDisplay" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Competition type</label>
+                <input type="text" class="form-control" value="@Model.Input.CompetitionTypeDisplay" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Criteria count</label>
+                <input type="number" class="form-control" value="@Model.Input.CompetitionCriteriaCount" disabled />
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Criteria</h2>
+                    <p class="text-muted mb-0">
+                        Criterion order is fixed for V1. Update names, max scores, and active status only.
+                    </p>
+                </div>
+
+                <div class="row g-3" id="criteriaContainer"></div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelEditScoringCriteriaModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetEditScoringCriteriaModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitScoringCriteriaButton">
+                Save Scoring Criteria
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editScoringCriteriaResultModal" tabindex="-1" aria-labelledby="editScoringCriteriaResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editScoringCriteriaResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/CompetitionScoringCriteria/Index">
+                        View All Scoring Criteria
+                    </a>
+
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditScoringCriteriaModal" tabindex="-1" aria-labelledby="resetEditScoringCriteriaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditScoringCriteriaModalLabel">
+                        Reset changes?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will reset the scoring criteria fields back to the last loaded values.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditScoringCriteriaModal" tabindex="-1" aria-labelledby="cancelEditScoringCriteriaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditScoringCriteriaModalLabel">
+                        Cancel editing scoring criteria?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any unsaved changes on this page will be lost.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger"
+                   asp-page="/Admin/CompetitionScoringCriteria/Details"
+                   asp-route-id="@Model.Input.CompetitionId">
+                    Cancel editing
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const criteria = @Html.Raw(criteriaJson);
+            const criteriaContainer = document.getElementById("criteriaContainer");
+            const form = document.getElementById("editScoringCriteriaForm");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+            const submitScoringCriteriaButton = document.getElementById("submitScoringCriteriaButton");
+
+            function getCriterionColumns() {
+                return Array.from(criteriaContainer?.querySelectorAll("[data-criterion-column]") ?? []);
+            }
+
+            function sanitizeMaxScoreInput(input) {
+                if (!input || !input.value) {
+                    return;
+                }
+
+                const rawValue = input.value.trim().replace(",", ".");
+                const wholeNumberValue = rawValue.includes(".")
+                    ? rawValue.split(".")[0]
+                    : rawValue;
+                const numericValue = Number(wholeNumberValue);
+
+                if (Number.isNaN(numericValue)) {
+                    input.value = "";
+                    return;
+                }
+
+                if (numericValue < 0) {
+                    input.value = "0";
+                    return;
+                }
+
+                if (numericValue > 100) {
+                    input.value = "100";
+                    return;
+                }
+
+                input.value = numericValue.toString();
+            }
+
+            function sanitizeAllMaxScoreInputs() {
+                criteriaContainer?.querySelectorAll("[data-max-score-input]").forEach((input) => {
+                    sanitizeMaxScoreInput(input);
+                });
+            }
+
+            function createCriterionColumn(criterion) {
+                const column = document.createElement("div");
+                column.className = "col-12 col-md-6 col-xl-4";
+                column.dataset.criterionColumn = "true";
+
+                column.innerHTML = `
+                    <div class="scoring-criterion-box h-100">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">
+                                    Criterion no. <span class="app-required">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       data-visible-criterion-no
+                                       readonly />
+                                <input type="hidden" data-id-input />
+                                <input type="hidden" data-criterion-no-input />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Criterion name</label>
+                                <input type="text"
+                                       class="form-control"
+                                       data-criterion-name-input
+                                       maxlength="100" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Max score</label>
+                                <input type="number"
+                                       class="form-control"
+                                       data-max-score-input
+                                       min="0"
+                                       max="100"
+                                       step="1" />
+                                <div class="form-text">
+                                    Optional. Whole number from 0 to 100 only.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           data-is-active-input
+                                           value="true" />
+                                    <input type="hidden" data-is-active-hidden-input value="false" />
+                                    <label class="form-check-label">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const visibleCriterionNo = column.querySelector("[data-visible-criterion-no]");
+                const idInput = column.querySelector("[data-id-input]");
+                const criterionNoInput = column.querySelector("[data-criterion-no-input]");
+                const criterionNameInput = column.querySelector("[data-criterion-name-input]");
+                const maxScoreInput = column.querySelector("[data-max-score-input]");
+                const isActiveInput = column.querySelector("[data-is-active-input]");
+
+                if (visibleCriterionNo) {
+                    visibleCriterionNo.value = criterion.criterionNo;
+                }
+
+                if (idInput) {
+                    idInput.value = criterion.id;
+                }
+
+                if (criterionNoInput) {
+                    criterionNoInput.value = criterion.criterionNo;
+                }
+
+                if (criterionNameInput) {
+                    criterionNameInput.value = criterion.criterionName ?? "";
+                }
+
+                if (maxScoreInput) {
+                    maxScoreInput.value = criterion.maxScore ?? "";
+                    maxScoreInput.addEventListener("blur", () => sanitizeMaxScoreInput(maxScoreInput));
+                }
+
+                if (isActiveInput) {
+                    isActiveInput.checked = criterion.isActive ?? true;
+                }
+
+                return column;
+            }
+
+            function nameCriterionInputs() {
+                const columns = getCriterionColumns();
+
+                columns.forEach((column, index) => {
+                    const idInput = column.querySelector("[data-id-input]");
+                    const criterionNoInput = column.querySelector("[data-criterion-no-input]");
+                    const criterionNameInput = column.querySelector("[data-criterion-name-input]");
+                    const maxScoreInput = column.querySelector("[data-max-score-input]");
+                    const isActiveInput = column.querySelector("[data-is-active-input]");
+                    const isActiveHiddenInput = column.querySelector("[data-is-active-hidden-input]");
+
+                    if (idInput) {
+                        idInput.name = `Input.Criteria[${index}].Id`;
+                    }
+
+                    if (criterionNoInput) {
+                        criterionNoInput.name = `Input.Criteria[${index}].CriterionNo`;
+                    }
+
+                    if (criterionNameInput) {
+                        criterionNameInput.name = `Input.Criteria[${index}].CriterionName`;
+                    }
+
+                    if (maxScoreInput) {
+                        maxScoreInput.name = `Input.Criteria[${index}].MaxScore`;
+                    }
+
+                    if (isActiveInput) {
+                        isActiveInput.name = `Input.Criteria[${index}].IsActive`;
+                    }
+
+                    if (isActiveHiddenInput) {
+                        isActiveHiddenInput.name = `Input.Criteria[${index}].IsActive`;
+                    }
+                });
+            }
+
+            function renderCriterionColumns() {
+                if (!criteriaContainer) {
+                    return;
+                }
+
+                criteriaContainer.innerHTML = "";
+
+                criteria.forEach((criterion) => {
+                    criteriaContainer.appendChild(createCriterionColumn(criterion));
+                });
+
+                nameCriterionInputs();
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+                renderCriterionColumns();
+
+                const resetModalElement = document.getElementById("resetEditScoringCriteriaModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+            submitScoringCriteriaButton?.addEventListener("click", sanitizeAllMaxScoreInputs);
+            form?.addEventListener("submit", sanitizeAllMaxScoreInputs);
+
+            renderCriterionColumns();
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editScoringCriteriaResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

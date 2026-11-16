@@ -1,0 +1,70 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.JudgeConflicts.IndexModel
+@{
+    ViewData["Title"] = "Judge Conflicts";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Judge Conflicts</h1>
+    <p>
+        Track judge conflicts such as own team, related participant, blocked competition category, or custom notes.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/JudgeConflicts/Create">
+            Add Conflict
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.JudgeConflicts.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No judge conflicts have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Judge</th>
+                        <th>Conflict type</th>
+                        <th>Target</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var conflict in Model.JudgeConflicts)
+                    {
+                        <tr>
+                            <td>@conflict.JudgeDisplay</td>
+                            <td><span class="app-pill">@conflict.ConflictTypeDisplay</span></td>
+                            <td>@conflict.TargetDisplay</td>
+                            <td>
+                                <span class="app-pill @(conflict.IsActive ? string.Empty : "app-pill-danger")">
+                                    @conflict.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/JudgeConflicts/Details"
+                                   asp-route-id="@conflict.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

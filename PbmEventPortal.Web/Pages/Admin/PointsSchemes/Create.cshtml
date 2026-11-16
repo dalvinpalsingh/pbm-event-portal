@@ -1,0 +1,353 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.PointsSchemes.CreateModel
+@{
+    ViewData["Title"] = "Add Points Scheme";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Add Points Scheme</h1>
+    <p>
+        Configure placing points for winner rankings and overall results calculation.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createPointsSchemeForm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.SchemeName" class="form-label">
+                    Scheme name <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.SchemeName" class="form-control" maxlength="100" required />
+                <span asp-validation-for="Input.SchemeName" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Input.WinnerCount" class="form-label">
+                    Winner count <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.WinnerCount" asp-items="Model.WinnerCountOptions" class="form-select" id="winnerCountSelect" required></select>
+                <span asp-validation-for="Input.WinnerCount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Placing Points</h2>
+                    <p class="text-muted mb-0">
+                        Placing rows are generated based on the selected winner count.
+                    </p>
+                </div>
+
+                <div class="row g-3" id="pointsSchemeItemsContainer">
+                    @for (var index = 0; index < Model.Input.Items.Count; index++)
+                    {
+                        <div class="col-12 col-md-6 col-xl-4" data-points-scheme-item-column>
+                            <div class="scoring-criterion-box h-100">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">
+                                            Placing <span class="app-required">*</span>
+                                        </label>
+                                        <input asp-for="Input.Items[index].PlacingNo"
+                                               class="form-control"
+                                               readonly />
+                                        <span asp-validation-for="Input.Items[index].PlacingNo" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="Input.Items[index].PointsAwarded" class="form-label">
+                                            Points awarded <span class="app-required">*</span>
+                                        </label>
+                                        <input asp-for="Input.Items[index].PointsAwarded"
+                                               class="form-control"
+                                               min="0"
+                                               step="1"
+                                               required />
+                                        <span asp-validation-for="Input.Items[index].PointsAwarded" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelCreatePointsSchemeModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetCreatePointsSchemeModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Add Points Scheme
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createPointsSchemeResultModal" tabindex="-1" aria-labelledby="createPointsSchemeResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createPointsSchemeResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/PointsSchemes/Index">
+                        View All Points Schemes
+                    </a>
+
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreatePointsSchemeModal" tabindex="-1" aria-labelledby="resetCreatePointsSchemeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreatePointsSchemeModalLabel">
+                        Reset form?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will clear all entered points scheme details and return the form to its default state.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreatePointsSchemeModal" tabindex="-1" aria-labelledby="cancelCreatePointsSchemeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreatePointsSchemeModalLabel">
+                        Cancel adding points scheme?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any details entered on this page will not be saved.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/PointsSchemes/Index">
+                    Cancel adding points scheme
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const form = document.getElementById("createPointsSchemeForm");
+            const winnerCountSelect = document.getElementById("winnerCountSelect");
+            const container = document.getElementById("pointsSchemeItemsContainer");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function getWinnerCount() {
+                const value = Number(winnerCountSelect?.value ?? 3);
+                return Number.isNaN(value) ? 3 : value;
+            }
+
+            function createItemColumn(placingNo, pointsAwarded) {
+                const column = document.createElement("div");
+                column.className = "col-12 col-md-6 col-xl-4";
+                column.dataset.pointsSchemeItemColumn = "true";
+                column.innerHTML = `
+                    <div class="scoring-criterion-box h-100">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Placing <span class="app-required">*</span></label>
+                                <input type="number" class="form-control" data-placing-no-input readonly />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Points awarded <span class="app-required">*</span></label>
+                                <input type="number" class="form-control" data-points-awarded-input min="0" step="1" required />
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                column.querySelector("[data-placing-no-input]").value = placingNo.toString();
+                column.querySelector("[data-points-awarded-input]").value = pointsAwarded.toString();
+
+                return column;
+            }
+
+            function nameInputs() {
+                const columns = Array.from(container?.querySelectorAll("[data-points-scheme-item-column]") ?? []);
+
+                columns.forEach((column, index) => {
+                    const placingInput = column.querySelector("[data-placing-no-input]");
+                    const pointsInput = column.querySelector("[data-points-awarded-input]");
+
+                    placingInput.name = `Input.Items[${index}].PlacingNo`;
+                    pointsInput.name = `Input.Items[${index}].PointsAwarded`;
+                });
+            }
+
+            function renderItems() {
+                if (!container) {
+                    return;
+                }
+
+                const winnerCount = getWinnerCount();
+                container.innerHTML = "";
+
+                for (let placingNo = 1; placingNo <= winnerCount; placingNo += 1) {
+                    const pointsAwarded = winnerCount - placingNo + 1;
+                    container.appendChild(createItemColumn(placingNo, pointsAwarded));
+                }
+
+                nameInputs();
+            }
+
+            function sanitizePointsInputs() {
+                container?.querySelectorAll("[data-points-awarded-input]").forEach((input) => {
+                    const numericValue = Number(input.value);
+
+                    if (Number.isNaN(numericValue) || numericValue < 0) {
+                        input.value = "0";
+                        return;
+                    }
+
+                    input.value = Math.trunc(numericValue).toString();
+                });
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+                renderItems();
+
+                const resetModalElement = document.getElementById("resetCreatePointsSchemeModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            winnerCountSelect?.addEventListener("change", renderItems);
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+            form?.addEventListener("submit", sanitizePointsInputs);
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createPointsSchemeResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

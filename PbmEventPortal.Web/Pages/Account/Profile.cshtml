@@ -1,0 +1,117 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.Account.ProfileModel
+@{
+    ViewData["Title"] = "My Profile";
+    var user = Model.UserProfile;
+}
+
+@if (user == null)
+{
+    <div class="app-alert app-alert-danger">
+        Profile not found.
+    </div>
+}
+else
+{
+    <div class="app-page-header">
+        <p class="app-eyebrow">My account</p>
+        <h1>My Profile</h1>
+        <p>
+            View your personal profile details.
+        </p>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="app-card">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h2 class="mb-1">@user.FullNameAsPerId</h2>
+
+                        @if (!string.IsNullOrWhiteSpace(user.FullNameGurmukhi))
+                        {
+                            <div class="text-muted">@user.FullNameGurmukhi</div>
+                        }
+                    </div>
+
+                    <span class="app-pill">@user.StatusDisplay</span>
+                </div>
+
+                <table class="table app-table">
+                    <tbody>
+                        <tr>
+                            <th>ID Type</th>
+                            <td>@user.IdType</td>
+                        </tr>
+                        <tr>
+                            <th>ID Number</th>
+                            <td>@user.IdNumber</td>
+                        </tr>
+
+                        @if (user.PassportExpiryDate.HasValue)
+                        {
+                            <tr>
+                                <th>Passport Expiry</th>
+                                <td>@user.PassportExpiryDate.Value.ToString("dd MMM yyyy")</td>
+                            </tr>
+                        }
+
+                        <tr>
+                            <th>Gender</th>
+                            <td>@user.GenderDisplay</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Birth</th>
+                            <td>@user.DateOfBirth.ToString("dd MMM yyyy")</td>
+                        </tr>
+                        <tr>
+                            <th>Email</th>
+                            <td>
+                                <a href="mailto:@user.Email">@user.Email</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Mobile</th>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a class="btn btn-primary btn-sm" href="@user.CallUrl">
+                                        <i class="bi bi-telephone-fill me-1" aria-hidden="true"></i>
+                                        Call
+                                    </a>
+
+                                    <a class="btn btn-success btn-sm" href="@user.WhatsAppUrl" target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>
+                                        WhatsApp
+                                    </a>
+                                </div>
+
+                                <div class="text-muted small mt-1">
+                                    @user.MobileNumber
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="app-card">
+                <h2>Account Actions</h2>
+                <p>
+                    Manage your account security settings.
+                </p>
+
+                <div class="d-grid gap-2">
+                    <a class="btn btn-primary" asp-page="/Account/ChangePassword">
+                        Change Password
+                    </a>
+
+                    <a class="btn btn-outline-danger" asp-page="/Index">
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

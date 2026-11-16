@@ -1,0 +1,1026 @@
+@page "/TeamManagement/{teamId:guid?}"
+@model PbmEventPortal.Web.Pages.TeamManagement.TeamManagementModel
+@{
+    ViewData["Title"] = "Team Management";
+
+    var participantTahapGroups = new[]
+    {
+        new { Code = "TAHAP_1", Name = "Tahap 1" },
+        new { Code = "TAHAP_2", Name = "Tahap 2" },
+        new { Code = "TAHAP_3", Name = "Tahap 3" },
+        new { Code = "TAHAP_4", Name = "Tahap 4" }
+    };
+
+    var draftParticipantCount = Model.Drafts.Count;
+    var pendingApprovalParticipantCount = Model.Participants.Count(participant =>
+        participant.RegisteredCompetitions.Any(entry =>
+            string.Equals(entry.EntryStatus, "SUBMITTED", StringComparison.OrdinalIgnoreCase)));
+    var approvedParticipantCount = Model.Participants.Count(participant =>
+        participant.RegisteredCompetitions.Count > 0 &&
+        participant.RegisteredCompetitions.All(entry =>
+            string.Equals(entry.EntryStatus, "APPROVED", StringComparison.OrdinalIgnoreCase)));
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/team-management/teammanagement.css" asp-append-version="true" />
+}
+
+<div class="app-page-header">
+    <h1>Team Management</h1>
+    <p>Manage your team &amp; participants.</p>
+</div>
+
+@if (Model.HasAnyAdminRole)
+{
+    <div class="app-card mb-3 teammanagement-admin-team-selector-card">
+        <label asp-for="TeamId" class="form-label">Team</label>
+        <select asp-for="TeamId"
+                asp-items="Model.Teams"
+                class="form-select"
+                id="teamManagementSelector"
+                data-searchable-select="true"
+                data-searchable-placeholder="Search teams..."
+                data-placeholder="Select team...">
+            <option value="">Select team...</option>
+        </select>
+    </div>
+}
+
+<div class="app-card teammanagement-notice-card @(Model.TeamSummary == null ? "" : "d-none")" id="teamManagementNoticeCard">
+    <div class="d-flex align-items-center gap-3">
+        <div class="app-result-modal-icon app-result-modal-danger flex-shrink-0">
+            <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div>
+            <h2 class="h4 mb-2" id="teamManagementNoticeTitle">@Model.NoticeTitle</h2>
+            <p class="text-muted mb-0" id="teamManagementNoticeMessage">@Model.NoticeDetails</p>
+        </div>
+    </div>
+</div>
+
+<div id="teamManagementWorkspaceContent" class="@(Model.TeamSummary == null ? "d-none" : "")">
+    <div class="row g-3 mb-3" data-team-management-workspace="true" data-team-id="@Model.TeamSummary?.TeamId">
+        <div class="col-lg-6">
+            <div class="app-card h-100">
+                <h2 class="h4 mb-1" id="teamManagementName">@Model.TeamSummary?.TeamName</h2>
+                <div class="fw-semibold mt-2 @(string.IsNullOrWhiteSpace(Model.TeamSummary?.TeamNameGurmukhi) ? "d-none" : "")" id="teamManagementNameGurmukhi">@Model.TeamSummary?.TeamNameGurmukhi</div>
+                <div class="text-muted small mt-2">State: <span id="teamManagementState">@Model.TeamSummary?.StateName</span></div>
+                <div class="text-muted small mt-2">Region: <span id="teamManagementRegion">@Model.TeamSummary?.RegionName</span></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-2">
+            <button type="button"
+                    class="app-card h-100 w-100 teammanagement-dashboard-card teammanagement-dashboard-card-warning"
+                    data-teammanagement-scroll-target="teamManagementDraftApplicationsPanel"
+                    data-teammanagement-scroll-count="@draftParticipantCount">
+                <div class="teammanagement-dashboard-card-label">
+                    <i class="bi bi-pencil-fill me-1" aria-hidden="true"></i>Draft Participants
+                </div>
+                <div class="display-6 fw-semibold">@draftParticipantCount</div>
+            </button>
+        </div>
+        <div class="col-sm-6 col-lg-2">
+            <button type="button"
+                    class="app-card h-100 w-100 teammanagement-dashboard-card"
+                    data-teammanagement-scroll-target="teamManagementParticipantsPanel"
+                    data-teammanagement-scroll-count="@pendingApprovalParticipantCount">
+                <div class="teammanagement-dashboard-card-label">
+                    <i class="bi bi-question-circle-fill text-warning me-1" aria-hidden="true"></i>Submitted, pending approval
+                </div>
+                <div class="display-6 fw-semibold">@pendingApprovalParticipantCount</div>
+            </button>
+        </div>
+        <div class="col-sm-6 col-lg-2">
+            <button type="button"
+                    class="app-card h-100 w-100 teammanagement-dashboard-card teammanagement-dashboard-card-success"
+                    data-teammanagement-scroll-target="teamManagementParticipantsPanel"
+                    data-teammanagement-scroll-count="@approvedParticipantCount">
+                <div class="teammanagement-dashboard-card-label">
+                    <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Approved Participants
+                </div>
+                <div class="display-6 fw-semibold">@approvedParticipantCount</div>
+            </button>
+        </div>
+    </div>
+
+    <div class="app-card mt-3 teammanagement-collapsible is-collapsed" id="teamManagementManagersPanel" data-teammanagement-collapsible="true" data-collapsed="true">
+        <button type="button"
+                class="teammanagement-collapsible-header"
+                data-teammanagement-collapse-toggle="true"
+                aria-expanded="false"
+                aria-controls="teamManagementManagersExpandedContent">
+            <span class="h4 mb-0">Team Managers</span>
+            <i class="bi bi-chevron-down teammanagement-collapse-chevron" aria-hidden="true"></i>
+        </button>
+
+        <div class="teammanagement-manager-compact-view mt-3">
+            @if (Model.TeamManagers.Count == 0)
+            {
+                <p class="text-muted mb-0">No active verified team managers found.</p>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var manager in Model.TeamManagers)
+                    {
+                        <div class="col-md-4">
+                            <div class="teammanagement-manager-card teammanagement-manager-card-compact @(manager.IsCurrentUser ? "is-current-user" : "")"
+                                 data-teammanagement-expand-section="teamManagementManagersPanel">
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (!string.IsNullOrWhiteSpace(manager.MobileNumber))
+                                    {
+                                        <span class="d-inline-flex gap-1">
+                                            <a class="btn btn-success btn-sm teammanagement-manager-icon-button"
+                                               href="https://wa.me/@manager.MobileNumber"
+                                               target="_blank"
+                                               rel="noopener"
+                                               aria-label="WhatsApp @manager.FullName">
+                                                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                                            </a>
+
+                                            <a class="btn btn-primary btn-sm teammanagement-manager-icon-button"
+                                               href="tel:@manager.MobileNumber"
+                                               aria-label="Call @manager.FullName">
+                                                <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                                            </a>
+                                        </span>
+                                    }
+
+                                    <div class="fw-semibold">@manager.FullName</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="teammanagement-collapsible-body" id="teamManagementManagersExpandedContent" data-teammanagement-collapse-body="true">
+            <div class="row g-3 pt-3">
+                @if (Model.TeamManagers.Count == 0)
+                {
+                    <div class="col-12">
+                        <p class="text-muted mb-0">No active verified team managers found.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var manager in Model.TeamManagers)
+                    {
+                        <div class="col-md-4">
+                            <div class="teammanagement-manager-card h-100 @(manager.IsCurrentUser ? "is-current-user" : "")">
+                                <div class="fw-semibold">@manager.FullName</div>
+                                <div class="small mt-1">@manager.Email</div>
+                                <div class="small mt-1">@(string.IsNullOrWhiteSpace(manager.MobileNumber) ? "-" : manager.MobileNumber)</div>
+
+                                @if (!string.IsNullOrWhiteSpace(manager.MobileNumber))
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        <a class="btn btn-success btn-sm"
+                                           href="https://wa.me/@manager.MobileNumber"
+                                           target="_blank"
+                                           rel="noopener">
+                                            <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>WhatsApp
+                                        </a>
+
+                                        <a class="btn btn-primary btn-sm" href="tel:@manager.MobileNumber">
+                                            <i class="bi bi-telephone-fill me-1" aria-hidden="true"></i>Call
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3 teammanagement-collapsible is-expanded @(Model.Drafts.Count == 0 ? "d-none" : "")"
+         id="teamManagementDraftApplicationsPanel"
+         data-teammanagement-collapsible="true"
+         data-collapsed="false">
+        <button type="button"
+                class="teammanagement-collapsible-header teammanagement-sticky-section-header mb-3"
+                data-teammanagement-collapse-toggle="true"
+                aria-expanded="true"
+                aria-controls="teamManagementDraftApplicationsBody">
+            <span class="h4 mb-0">Draft Applications</span>
+            <span class="d-flex align-items-center gap-3">
+                <span class="badge text-bg-light border" id="teamManagementDraftApplicationsStatusBadge">
+                    @Model.Drafts.Count draft@(Model.Drafts.Count == 1 ? "" : "s")
+                </span>
+                <i class="bi bi-chevron-up teammanagement-collapse-chevron" aria-hidden="true"></i>
+            </span>
+        </button>
+
+        <div class="teammanagement-collapsible-body" id="teamManagementDraftApplicationsBody" data-teammanagement-collapse-body="true">
+
+        <div class="d-flex align-items-center gap-2 text-muted d-none" id="teamManagementDraftApplicationsLoading">
+            <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+            <span>Loading drafts...</span>
+        </div>
+
+        <div class="alert alert-danger d-none" id="teamManagementDraftApplicationsError"></div>
+
+        <div id="teamManagementDraftApplicationsContent"
+             class="@(Model.Drafts.Count == 0 ? "d-none" : "")"
+             data-server-rendered="true"
+             data-draft-count="@Model.Drafts.Count">
+            @foreach (var tahap in participantTahapGroups)
+            {
+                var draftsForTahap = Model.Drafts
+                .Where(draft => draft.TahapCode == tahap.Code)
+                .ToList();
+
+                if (draftsForTahap.Count == 0)
+                {
+                    continue;
+                }
+
+                <div class="border border-2 border-warning rounded-3 shadow-sm p-3 mb-3 bg-warning-subtle" data-draft-tahap-box="@tahap.Code">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="h5 mb-0">@tahap.Name</h3>
+                            <span class="badge text-bg-warning border" data-draft-tahap-count="@tahap.Code">
+                                @draftsForTahap.Count draft@(draftsForTahap.Count == 1 ? "" : "s")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle mb-0">
+                            <colgroup>
+                                <col class="col-3" />
+                                <col class="col-3" />
+                                <col class="col-4" />
+                                <col class="col-2" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Participant</th>
+                                    <th>Parent/Guardian</th>
+                                    <th>Competitions</th>
+                                    <th class="text-end">Quick Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var draft in draftsForTahap)
+                                {
+                                    var genderIsMale = string.Equals(draft.Gender, "Male", StringComparison.OrdinalIgnoreCase);
+                                    var genderIsFemale = string.Equals(draft.Gender, "Female", StringComparison.OrdinalIgnoreCase);
+                                    var genderIcon = genderIsMale ? "bi-gender-male" : "bi-gender-female";
+                                    var genderBadgeClass = genderIsMale ? "app-gender-badge-male" : "app-gender-badge-female";
+                                    var idIcon = draft.IdType == "PASSPORT" ? "bi-passport-fill text-primary" : "bi-person-vcard-fill text-primary";
+                                    var idLabel = string.IsNullOrWhiteSpace(draft.IdNumber) ? "-" : draft.IdNumber;
+                                    var draftAge = draft.DateOfBirth.HasValue
+                                    ? Math.Max(0, DateTime.Today.Year - draft.DateOfBirth.Value.Year)
+                                    : (int?)null;
+                                    var guardianDigits = new string((draft.ParentGuardianMobile ?? string.Empty).Where(char.IsDigit).ToArray());
+
+                                    var individualEntries = draft.RegisteredCompetitions
+                                    .Where(entry => string.Equals(entry.EntryType, "INDIVIDUAL", StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
+
+                                    var teamEntries = draft.RegisteredCompetitions
+                                    .Where(entry => string.Equals(entry.EntryType, "TEAM", StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
+
+                                    <tr class="team-management-draft-row" data-draft-row-id="@draft.DraftId">
+                                        <td>
+                                            <div class="fw-semibold">
+                                                @(string.IsNullOrWhiteSpace(draft.FullName) ? "Unnamed draft" : draft.FullName)
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(draft.FullNameGurmukhi))
+                                            {
+                                                <div class="text-muted small">@draft.FullNameGurmukhi</div>
+                                            }
+
+                                            <div class="text-muted small mt-1">
+                                                @if (genderIsMale || genderIsFemale)
+                                                {
+                                                    <span class="app-gender-badge @genderBadgeClass" title="@draft.Gender">
+                                                        <i class="bi @genderIcon" aria-hidden="true"></i>
+                                                    </span>
+                                                    <span class="visually-hidden">@draft.Gender</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>-</span>
+                                                }
+                                            </div>
+
+                                            <div class="text-muted small">
+                                                <i class="bi bi-cake2-fill text-warning me-1"></i>
+                                                @if (draft.DateOfBirth.HasValue)
+                                                {
+                                                    @draft.DateOfBirth.Value.ToString("dd MMM yyyy")
+                                                    @if (draftAge.HasValue)
+                                                    {
+                                                        <text> (Age: @draftAge)</text>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <text>-</text>
+                                                }
+                                            </div>
+
+                                            <div class="text-muted small">
+                                                <i class="bi @idIcon me-1"></i>@idLabel
+                                            </div>
+
+                                            <div class="text-muted small mt-1">
+                                                Last saved: @draft.LastSavedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <div class="fw-semibold">
+                                                @(string.IsNullOrWhiteSpace(draft.ParentGuardianName) ? "-" : draft.ParentGuardianName)
+                                            </div>
+                                            <div class="text-muted small">
+                                                @(string.IsNullOrWhiteSpace(draft.ParentGuardianMobile) ? "-" : draft.ParentGuardianMobile)
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(guardianDigits))
+                                            {
+                                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                                    <a class="btn btn-success btn-sm"
+                                                       href="https://wa.me/@guardianDigits"
+                                                       target="_blank"
+                                                       rel="noopener">
+                                                        <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>WhatsApp
+                                                    </a>
+
+                                                    <a class="btn btn-primary btn-sm" href="tel:@draft.ParentGuardianMobile">
+                                                        <i class="bi bi-telephone-fill me-1" aria-hidden="true"></i>Call
+                                                    </a>
+                                                </div>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            <div class="d-flex align-items-stretch">
+                                                <div class="w-50 pe-3">
+                                                    <div class="small fw-semibold text-muted mb-2">Individual</div>
+
+                                                    @if (individualEntries.Count == 0)
+                                                    {
+                                                        <span class="badge rounded-pill text-primary border border-primary bg-white">N/A</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @for (var i = 0; i < individualEntries.Count; i++)
+                                                        {
+                                                            var entry = individualEntries.ElementAtOrDefault(i);
+                                                            var normalizedStatus = (entry?.EntryStatus ?? string.Empty).ToUpperInvariant();
+                                                            var statusIconClass = normalizedStatus switch
+                                                            {
+                                                                "APPROVED" => "bi-check-circle-fill text-success",
+                                                                "REJECTED" => "bi-x-circle-fill text-danger",
+                                                                "SUBMITTED" => "bi-question-circle-fill text-warning",
+                                                                "DRAFT" => "bi-pencil-fill text-secondary",
+                                                                "CANCELLED" => "bi-dash-circle-fill text-secondary",
+                                                                _ => "bi-pencil-fill text-secondary"
+                                                            };
+                                                            var statusTooltip = normalizedStatus switch
+                                                            {
+                                                                "APPROVED" => "Approved",
+                                                                "REJECTED" => "Rejected",
+                                                                "SUBMITTED" => "Submitted, pending approval",
+                                                                "DRAFT" => "Draft, pending submission",
+                                                                "CANCELLED" => "Cancelled",
+                                                                _ => $"Registration status: {normalizedStatus}"
+                                                            };
+
+                                                            <div class="@(i == 0 ? "mb-2" : "")">
+                                                                <span class="d-inline-flex align-items-center gap-1 text-nowrap">
+                                                                    <span class="app-pill">@entry?.CompetitionName</span>
+                                                                    <i class="bi @statusIconClass flex-shrink-0"
+                                                                       role="img"
+                                                                       aria-label="@statusTooltip"
+                                                                       title="@statusTooltip"
+                                                                       data-bs-toggle="tooltip"></i>
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+
+                                                <div class="w-50 ps-3 border-start">
+                                                    <div class="small fw-semibold text-muted mb-2">Team</div>
+
+                                                    @if (teamEntries.Count == 0)
+                                                    {
+                                                        <span class="badge rounded-pill text-primary border border-primary bg-white">N/A</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @for (var i = 0; i < teamEntries.Count; i++)
+                                                        {
+                                                            var entry = teamEntries.ElementAtOrDefault(i);
+                                                            var normalizedStatus = (entry?.EntryStatus ?? string.Empty).ToUpperInvariant();
+                                                            var statusIconClass = normalizedStatus switch
+                                                            {
+                                                                "APPROVED" => "bi-check-circle-fill text-success",
+                                                                "REJECTED" => "bi-x-circle-fill text-danger",
+                                                                "SUBMITTED" => "bi-question-circle-fill text-warning",
+                                                                "DRAFT" => "bi-pencil-fill text-secondary",
+                                                                "CANCELLED" => "bi-dash-circle-fill text-secondary",
+                                                                _ => "bi-pencil-fill text-secondary"
+                                                            };
+                                                            var statusTooltip = normalizedStatus switch
+                                                            {
+                                                                "APPROVED" => "Approved",
+                                                                "REJECTED" => "Rejected",
+                                                                "SUBMITTED" => "Submitted, pending approval",
+                                                                "DRAFT" => "Draft, pending submission",
+                                                                "CANCELLED" => "Cancelled",
+                                                                _ => $"Registration status: {normalizedStatus}"
+                                                            };
+
+                                                            <div class="@(i == 0 ? "mb-2" : "")">
+                                                                <span class="d-inline-flex align-items-center gap-1 text-nowrap">
+                                                                    <span class="app-pill">@entry?.CompetitionName</span>
+                                                                    <i class="bi @statusIconClass flex-shrink-0"
+                                                                       role="img"
+                                                                       aria-label="@statusTooltip"
+                                                                       title="@statusTooltip"
+                                                                       data-bs-toggle="tooltip"></i>
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="align-middle text-end text-nowrap">
+                                            <div class="d-inline-flex flex-column gap-1 align-items-stretch">
+                                                <button type="button"
+                                                        class="btn btn-warning btn-sm px-2 py-1 text-nowrap"
+                                                        data-draft-action="continue"
+                                                        data-draft-id="@draft.DraftId">
+                                                    <i class="bi bi-pencil-fill me-1" aria-hidden="true"></i>Edit
+                                                </button>
+
+                                                <button type="button"
+                                                        class="btn btn-danger btn-sm px-2 py-1 text-nowrap"
+                                                        data-draft-action="cancel"
+                                                        data-draft-id="@draft.DraftId">
+                                                    <i class="bi bi-trash-fill me-1" aria-hidden="true"></i>Delete Draft
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+        </div>
+    </div>
+
+    <div class="app-card mt-3 teammanagement-collapsible is-expanded"
+         id="teamManagementParticipantsPanel"
+         data-teammanagement-collapsible="true"
+         data-collapsed="false">
+        <button type="button"
+                class="teammanagement-collapsible-header teammanagement-sticky-section-header mb-3"
+                data-teammanagement-collapse-toggle="true"
+                aria-expanded="true"
+                aria-controls="teamManagementParticipantsBody">
+            <span class="h4 mb-0">Participants</span>
+            <span class="d-flex align-items-center gap-3">
+                <span class="badge text-bg-light border" id="teamManagementParticipantsStatusBadge">
+                    @Model.Participants.Count participant@(Model.Participants.Count == 1 ? "" : "s")
+                </span>
+                <i class="bi bi-chevron-up teammanagement-collapse-chevron" aria-hidden="true"></i>
+            </span>
+        </button>
+
+        <div class="teammanagement-collapsible-body" id="teamManagementParticipantsBody" data-teammanagement-collapse-body="true">
+        <div id="teamManagementParticipantsContent" data-server-rendered="true" data-participant-count="@Model.Participants.Count">
+            @foreach (var tahap in participantTahapGroups)
+            {
+                var participantsForTahap = Model.Participants.Where(participant => participant.TahapCode == tahap.Code).ToList();
+
+                <div class="border border-2 border-primary-subtle rounded-3 shadow-sm p-3 mb-3 bg-white">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="h5 mb-0">@tahap.Name</h3>
+                            <span class="badge text-bg-light border">
+                                @participantsForTahap.Count participant@(participantsForTahap.Count == 1 ? "" : "s")
+                            </span>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                data-participant-action="add"
+                                data-add-participant-tahap="@tahap.Code"
+                                data-add-participant-tahap-name="@tahap.Name">
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Add @tahap.Name Participant
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table app-table align-middle mb-0">
+                            <colgroup>
+                                <col class="col-3" />
+                                <col class="col-3" />
+                                <col class="col-4" />
+                                <col class="col-2" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Participant</th>
+                                    <th>Parent/Guardian</th>
+                                    <th>Competitions</th>
+                                    <th class="text-end">Quick Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (participantsForTahap.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="4">
+                                            <div class="text-muted py-3">No participants added for this Tahap yet.</div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var participant in participantsForTahap)
+                                    {
+                                        var genderIsMale = string.Equals(participant.Gender, "M", StringComparison.OrdinalIgnoreCase) || string.Equals(participant.Gender, "Male", StringComparison.OrdinalIgnoreCase);
+                                        var genderIcon = genderIsMale ? "bi-gender-male" : "bi-gender-female";
+                                        var genderBadgeClass = genderIsMale ? "app-gender-badge-male" : "app-gender-badge-female";
+                                        var hasNRIC = string.Equals(participant.IdType, "NRIC", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(participant.NricNumber);
+                                        var hasPassport = string.Equals(participant.IdType, "PASSPORT", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(participant.PassportNumber);
+                                        var idIcon = hasNRIC ? "bi-person-vcard-fill text-primary" : (hasPassport ? "bi-passport-fill text-primary" : "bi-question");
+                                        var idLabel = hasNRIC ? participant.NricNumber : (hasPassport ? participant.PassportNumber : "ID number not found");
+                                        var participantAge = Math.Max(0, DateTime.Today.Year - participant.DateOfBirth.Year);
+
+                                        var individualEntries = participant.RegisteredCompetitions
+                                        .Where(entry => string.Equals(entry.EntryType, "INDIVIDUAL", StringComparison.OrdinalIgnoreCase))
+                                        .ToList();
+
+                                        var teamEntries = participant.RegisteredCompetitions
+                                        .Where(entry => string.Equals(entry.EntryType, "TEAM", StringComparison.OrdinalIgnoreCase))
+                                        .ToList();
+
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@participant.FullName</div>
+
+                                                <div class="text-muted small">@participant.FullNameGurmukhi</div>
+
+                                                <div class="text-muted small mt-1">
+                                                    <span class="app-gender-badge @genderBadgeClass" title="@participant.Gender">
+                                                        <i class="bi @genderIcon" aria-hidden="true"></i>
+                                                    </span>
+                                                    <span class="visually-hidden">@participant.Gender</span>
+                                                </div>
+
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-cake2-fill text-warning me-1"></i>@participant.DateOfBirth.ToString("dd MMM yyyy") (Age: @participantAge)
+                                                </div>
+
+                                                <div class="text-muted small">
+                                                    <i class="bi @idIcon me-1"></i>@idLabel
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <div class="fw-semibold">@participant.ParentGuardianName</div>
+                                                <div class="text-muted small">@participant.ParentGuardianMobile</div>
+
+                                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                                    <a class="btn btn-success btn-sm"
+                                                       href="https://wa.me/@participant.ParentGuardianMobile"
+                                                       target="_blank"
+                                                       rel="noopener">
+                                                        <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>WhatsApp
+                                                    </a>
+
+                                                    <a class="btn btn-primary btn-sm" href="tel:@participant.ParentGuardianMobile">
+                                                        <i class="bi bi-telephone-fill me-1" aria-hidden="true"></i>Call
+                                                    </a>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <div class="d-flex align-items-stretch">
+                                                    <div class="w-50 pe-3">
+                                                        <div class="small fw-semibold text-muted mb-2">Individual</div>
+
+                                                        @for (var i = 0; i < individualEntries.Count; i++)
+                                                        {
+                                                            var entry = individualEntries.ElementAtOrDefault(i);
+                                                            <div class="@(i == 0 ? "mb-2" : "")">
+                                                                @if (entry == null)
+                                                                {
+                                                                    <span class="badge rounded-pill text-primary border border-primary bg-white">N/A</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    var normalizedStatus = (entry.EntryStatus ?? string.Empty).ToUpperInvariant();
+                                                                    var statusIconClass = normalizedStatus switch
+                                                                    {
+                                                                        "APPROVED" => "bi-check-circle-fill text-success",
+                                                                        "REJECTED" => "bi-x-circle-fill text-danger",
+                                                                        "SUBMITTED" => "bi-question-circle-fill text-warning",
+                                                                        "DRAFT" => "bi-pencil-fill text-secondary",
+                                                                        "CANCELLED" => "bi-dash-circle-fill text-secondary",
+                                                                        _ => "bi-pencil-fill text-secondary"
+                                                                    };
+                                                                    var statusTooltip = normalizedStatus switch
+                                                                    {
+                                                                        "APPROVED" => "Approved",
+                                                                        "REJECTED" => "Rejected",
+                                                                        "SUBMITTED" => "Submitted, pending approval",
+                                                                        "DRAFT" => "Draft, pending submission",
+                                                                        "CANCELLED" => "Cancelled",
+                                                                        _ => $"Registration status: {normalizedStatus}"
+                                                                    };
+
+                                                                    <span class="d-inline-flex align-items-center gap-1 text-nowrap">
+                                                                        <span class="app-pill">@entry.CompetitionName</span>
+                                                                        <i class="bi @statusIconClass flex-shrink-0"
+                                                                           role="img"
+                                                                           aria-label="@statusTooltip"
+                                                                           title="@statusTooltip"
+                                                                           data-bs-toggle="tooltip"></i>
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+
+                                                    <div class="w-50 ps-3 border-start">
+                                                        <div class="small fw-semibold text-muted mb-2">Team</div>
+
+                                                        @for (var i = 0; i < teamEntries.Count; i++)
+                                                        {
+                                                            var entry = teamEntries.ElementAtOrDefault(i);
+                                                            <div class="@(i == 0 ? "mb-2" : "")">
+                                                                @if (entry == null)
+                                                                {
+                                                                    <span class="badge rounded-pill text-primary border border-primary bg-white">N/A</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    var normalizedStatus = (entry.EntryStatus ?? string.Empty).ToUpperInvariant();
+                                                                    var statusIconClass = normalizedStatus switch
+                                                                    {
+                                                                        "APPROVED" => "bi-check-circle-fill text-success",
+                                                                        "REJECTED" => "bi-x-circle-fill text-danger",
+                                                                        "SUBMITTED" => "bi-question-circle-fill text-warning",
+                                                                        "DRAFT" => "bi-pencil-fill text-secondary",
+                                                                        "CANCELLED" => "bi-dash-circle-fill text-secondary",
+                                                                        _ => "bi-pencil-fill text-secondary"
+                                                                    };
+                                                                    var statusTooltip = normalizedStatus switch
+                                                                    {
+                                                                        "APPROVED" => "Approved",
+                                                                        "REJECTED" => "Rejected",
+                                                                        "SUBMITTED" => "Submitted, pending approval",
+                                                                        "DRAFT" => "Draft, pending submission",
+                                                                        "CANCELLED" => "Cancelled",
+                                                                        _ => $"Registration status: {normalizedStatus}"
+                                                                    };
+
+                                                                    <span class="d-inline-flex align-items-center gap-1 text-nowrap">
+                                                                        <span class="app-pill">@entry.CompetitionName</span>
+                                                                        <i class="bi @statusIconClass flex-shrink-0"
+                                                                           role="img"
+                                                                           aria-label="@statusTooltip"
+                                                                           title="@statusTooltip"
+                                                                           data-bs-toggle="tooltip"></i>
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td class="align-middle text-end text-nowrap">
+                                                <div class="d-inline-flex flex-column gap-1 align-items-stretch">
+                                                    <button type="button"
+                                                            class="btn btn-primary btn-sm px-2 py-1 text-nowrap"
+                                                            data-participant-action="view"
+                                                            data-participant-id="@participant.ParticipantId">
+                                                        <i class="bi bi-eye-fill me-1" aria-hidden="true"></i>View
+                                                    </button>
+
+                                                    <button type="button"
+                                                            class="btn btn-warning btn-sm px-2 py-1 text-nowrap"
+                                                            data-participant-action="edit"
+                                                            data-participant-id="@participant.ParticipantId">
+                                                        <i class="bi bi-pencil-fill me-1" aria-hidden="true"></i>Edit
+                                                    </button>
+
+                                                    <button type="button"
+                                                            class="btn btn-danger btn-sm px-2 py-1 text-nowrap"
+                                                            data-participant-action="delete"
+                                                            data-participant-id="@participant.ParticipantId">
+                                                        <i class="bi bi-trash-fill me-1" aria-hidden="true"></i>Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teamManagementParticipantProfileModal" tabindex="-1" aria-labelledby="teamManagementParticipantProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <p class="app-eyebrow mb-1">Participant profile</p>
+                    <h2 class="modal-title fs-4" id="teamManagementParticipantProfileModalLabel">Participant Profile</h2>
+                </div>
+                <button type="button" class="btn-close" id="teamManagementParticipantProfileModalCloseButton" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <form id="teamManagementParticipantForm" novalidate>
+                    <input type="hidden" id="teamManagementParticipantDraftId" />
+                    <input type="hidden" id="teamManagementParticipantTeamId" />
+                    <input type="hidden" id="teamManagementParticipantTahapCode" />
+                    <div class="row g-0">
+                        <div class="col-lg-7 border-end">
+                            <div class="p-3 p-lg-4" style="max-height: calc(100vh - 230px); overflow-y: auto;">
+                                <p class="app-required-legend"><span class="app-required">*</span> Mandatory field</p>
+
+                                <div class="border border-2 border-primary-subtle rounded-3 shadow-sm p-3 mb-3 bg-white">
+                                    <h3 class="h5 mb-3">Participant Details</h3>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Full name as per ID <span class="app-required">*</span></label>
+                                        <input class="form-control" id="fullNameAsPerIdInput" maxlength="200" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Full name in Gurmukhi <span class="app-required">*</span></label>
+                                        <input class="form-control" id="fullNameGurmukhiInput" maxlength="200" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">ID type <span class="app-required">*</span></label>
+                                        <select class="form-select" id="idTypeSelect" required>
+                                            <option value="NRIC">NRIC</option>
+                                            <option value="PASSPORT">Passport</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3" data-id-section="nric">
+                                        <label class="form-label">NRIC number <span class="app-required">*</span></label>
+                                        <input class="form-control" id="nricInput" maxlength="14" placeholder="990101-01-0101" inputmode="numeric" />
+                                    </div>
+
+                                    <div class="row g-2 mb-3 d-none" data-id-section="passport">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Passport number <span class="app-required">*</span></label>
+                                            <input class="form-control" id="passportNumberInput" maxlength="20" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Passport expiry date <span class="app-required">*</span></label>
+                                            <input class="form-control" id="passportExpiryDateInput" type="date" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Gender <span class="app-required">*</span></label>
+                                        <input type="hidden" id="genderHidden" />
+                                        <select class="form-select" id="genderSelect" required>
+                                            <option value="">Select gender...</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Date of birth <span class="app-required">*</span></label>
+                                        <input class="form-control" id="dateOfBirthInput" type="date" required />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Mobile number</label>
+                                        <div class="app-phone-control">
+                                            <input type="hidden" id="mobileCountryCodeInput" />
+                                            <input type="hidden" id="mobileFullNumberInput" />
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary app-phone-country-button dropdown-toggle" type="button" id="mobileCountryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <span id="selectedCountryFlag">🇲🇾</span>
+                                                    <span id="selectedCountryCode">+60</span>
+                                                </button>
+                                                <div class="dropdown-menu app-phone-country-menu" aria-labelledby="mobileCountryDropdown">
+                                                    <div class="px-2 pb-2"><input type="search" class="form-control form-control-sm" id="countrySearchInput" placeholder="Search country..." /></div>
+                                                    <div id="countryOptions"></div>
+                                                </div>
+                                            </div>
+                                            <input class="form-control" id="mobileLocalNumberInput" inputmode="numeric" placeholder="123456789" />
+                                        </div>
+                                        <div id="mobilePreview" class="app-field-feedback text-muted">Number is +60...</div>
+                                    </div>
+
+                                    <div>
+                                        <label class="form-label">Email address</label>
+                                        <input class="form-control" id="emailInput" maxlength="256" />
+                                        <div id="emailFeedback" class="app-field-feedback"></div>
+                                    </div>
+                                </div>
+
+                                <div class="border border-2 border-primary-subtle rounded-3 shadow-sm p-3 bg-white">
+                                    <h3 class="h5 mb-3">Parent / Guardian Info</h3>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Name <span class="app-required">*</span></label>
+                                        <input class="form-control" id="parentGuardianNameInput" maxlength="200" />
+                                    </div>
+
+                                    <div>
+                                        <label class="form-label">Mobile number <span class="app-required">*</span></label>
+                                        <div class="app-phone-control">
+                                            <input type="hidden" id="guardianCountryCodeInput" />
+                                            <input type="hidden" id="guardianFullNumberInput" />
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary app-phone-country-button dropdown-toggle" type="button" id="guardianCountryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <span id="guardianSelectedCountryFlag">🇲🇾</span>
+                                                    <span id="guardianSelectedCountryCode">+60</span>
+                                                </button>
+                                                <div class="dropdown-menu app-phone-country-menu" aria-labelledby="guardianCountryDropdown">
+                                                    <div class="px-2 pb-2"><input type="search" class="form-control form-control-sm" id="guardianCountrySearchInput" placeholder="Search country..." /></div>
+                                                    <div id="guardianCountryOptions"></div>
+                                                </div>
+                                            </div>
+                                            <input class="form-control" id="guardianLocalNumberInput" inputmode="numeric" placeholder="123456789" required />
+                                        </div>
+                                        <div id="guardianMobilePreview" class="app-field-feedback text-muted">Number is +60...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="p-3 p-lg-4" style="max-height: calc(100vh - 230px); overflow-y: auto;">
+                                <div class="border border-2 border-primary-subtle rounded-3 shadow-sm p-3 bg-white h-100">
+                                    <div class="mb-3">
+                                        <h3 class="h5 mb-1">Competition Assignments</h3>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-2 text-muted mb-3 d-none" id="teamManagementCompetitionAssignmentsLoading">
+                                        <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                                        <span>Loading competitions...</span>
+                                    </div>
+
+                                    <div class="alert alert-danger d-none" id="teamManagementCompetitionAssignmentsError"></div>
+
+                                    <div id="teamManagementCompetitionAssignmentsControls">
+                                        <div class="border rounded-3 p-3 mb-3">
+                                            <h4 class="h6 mb-3">Individual Events</h4>
+
+                                            <div class="mb-3">
+                                                <select class="form-select form-select-sm team-management-competition-select" id="individualCompetitionSlot1Select" data-event-type="INDIVIDUAL">
+                                                    <option value="">Select individual event...</option>
+                                                </select>
+                                                <div class="small mt-2 d-none" id="individualCompetitionSlot1Tracker"></div>
+                                            </div>
+
+                                            <div>
+                                                <select class="form-select form-select-sm team-management-competition-select" id="individualCompetitionSlot2Select" data-event-type="INDIVIDUAL">
+                                                    <option value="">Select individual event...</option>
+                                                </select>
+                                                <div class="small mt-2 d-none" id="individualCompetitionSlot2Tracker"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="border rounded-3 p-3">
+                                            <h4 class="h6 mb-3">Team Events</h4>
+
+                                            <div class="mb-3">
+                                                <select class="form-select form-select-sm team-management-competition-select" id="teamCompetitionSlot1Select" data-event-type="TEAM">
+                                                    <option value="">Select team event...</option>
+                                                </select>
+                                                <div class="small mt-2 d-none" id="teamCompetitionSlot1Tracker"></div>
+                                            </div>
+
+                                            <div>
+                                                <select class="form-select form-select-sm team-management-competition-select" id="teamCompetitionSlot2Select" data-event-type="TEAM">
+                                                    <option value="">Select team event...</option>
+                                                </select>
+                                                <div class="small mt-2 d-none" id="teamCompetitionSlot2Tracker"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-danger" id="teamManagementParticipantCancelButton">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="teamManagementParticipantResetButton">Reset</button>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary" id="teamManagementParticipantSaveDraftButton" disabled>Save as Draft</button>
+                    <button type="button" class="btn btn-primary" id="teamManagementParticipantSaveButton" disabled>Add Participant</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teamManagementParticipantDiscardModal" tabindex="-1" aria-labelledby="teamManagementParticipantDiscardModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger border border-3 border-danger shadow-lg">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="teamManagementParticipantDiscardModalLabel">Discard unsaved participant details?</h2>
+                </div>
+            </div>
+            <div class="modal-body">Any unsaved participant details will be discarded.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="teamManagementParticipantContinueEditingButton">Continue editing</button>
+                <button type="button" class="btn btn-danger" id="teamManagementParticipantDiscardChangesButton">Discard changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teamManagementParticipantResetConfirmModal" tabindex="-1" aria-labelledby="teamManagementParticipantResetConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger border border-3 border-danger shadow-lg">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="teamManagementParticipantResetConfirmModalLabel">Reset form?</h2>
+                </div>
+            </div>
+            <div class="modal-body" id="teamManagementParticipantResetConfirmModalBody">This will clear all entered participant details and return the form to its default state.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="teamManagementParticipantKeepEditingResetButton">Continue editing</button>
+                <button type="button" class="btn btn-danger" id="teamManagementParticipantConfirmResetButton">Reset form</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teamManagementDeleteDraftConfirmModal" tabindex="-1" aria-labelledby="teamManagementDeleteDraftConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger border border-3 border-danger shadow-lg">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="teamManagementDeleteDraftConfirmModalLabel">Delete draft?</h2>
+                </div>
+            </div>
+            <div class="modal-body">This draft will be permanently deleted. This action cannot be undone.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="teamManagementKeepDraftButton" data-bs-dismiss="modal">Keep draft</button>
+                <button type="button" class="btn btn-danger" id="teamManagementConfirmDeleteDraftButton">Delete draft</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teamManagementDeleteParticipantConfirmModal" tabindex="-1" aria-labelledby="teamManagementDeleteParticipantConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger border border-3 border-danger shadow-lg">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="teamManagementDeleteParticipantConfirmModalLabel">Delete participant?</h2>
+                </div>
+            </div>
+            <div class="modal-body">This participant and their registratred competition will be permanently deleted.</div>
+            <div class="modal-footer d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-primary" id="teamManagementKeepParticipantButton" data-bs-dismiss="modal">Keep Participant</button>
+                <button type="button" class="btn btn-danger" id="teamManagementConfirmDeleteParticipantButton">Delete Participant</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/team-management/teammanagement-participant-profile-modal.js" asp-append-version="true"></script>
+    <script src="~/js/team-management/teammanagement.js" asp-append-version="true"></script>
+    <script src="~/js/team-management/teammanagement-participant-draft.js" asp-append-version="true"></script>
+}

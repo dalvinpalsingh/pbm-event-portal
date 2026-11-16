@@ -1,0 +1,93 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.JudgeAssignments.DetailsModel
+@{
+    ViewData["Title"] = "Judge Assignment Details";
+    var assignment = Model.Assignment!;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Judge Assignment Details</h1>
+    <p>Review the assigned judge, competition category, optional criterion, and optional schedule link.</p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/JudgeAssignments/Index">
+            Back to Judge Assignments
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/JudgeAssignments/Edit" asp-route-id="@assignment.Id">
+            Edit Assignment
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="text-muted small">Competition year</div>
+            <div class="fw-semibold">@assignment.CompetitionYearDisplay</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Competition</div>
+            <div class="fw-semibold">@assignment.CompetitionDisplay</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Category</div>
+            <div class="fw-semibold">@assignment.CategoryDisplay / @assignment.EventType</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Judge</div>
+            <div class="fw-semibold">@assignment.JudgeDisplay</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Mobile number</div>
+            <div class="fw-semibold">@assignment.JudgeMobileNumber</div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-muted small">Status</div>
+            <span class="app-pill @(assignment.IsActive ? string.Empty : "app-pill-danger")">@assignment.StatusDisplay</span>
+        </div>
+
+        <div class="col-md-6">
+            <div class="text-muted small">Scoring criterion</div>
+            <div class="fw-semibold">@assignment.CriterionDisplay</div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="text-muted small">Schedule item</div>
+            <div class="fw-semibold">@assignment.ScheduleDisplay</div>
+        </div>
+
+        <div class="col-12">
+            <div class="text-muted small">Notes</div>
+            <div>@assignment.NotesDisplay</div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card mt-3">
+    <h2>Audit information</h2>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="text-muted small">Created at</div>
+            <div>@assignment.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Created by</div>
+            <div>@assignment.CreatedByDisplay</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Updated at</div>
+            <div>@(assignment.UpdatedAt.HasValue ? assignment.UpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "Not updated yet")</div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-muted small">Updated by</div>
+            <div>@assignment.UpdatedByDisplay</div>
+        </div>
+    </div>
+</div>

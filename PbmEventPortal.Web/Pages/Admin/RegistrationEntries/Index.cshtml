@@ -1,0 +1,79 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.RegistrationEntries.IndexModel
+@{
+    ViewData["Title"] = "Registration Entries";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Registration Entries</h1>
+    <p>
+        Manage individual and team competition registration entries for manual admin overrides.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/RegistrationEntries/Create">
+            Add Registration Entry
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.RegistrationEntries.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No registration entries have been created yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Competition</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Team</th>
+                        <th>Members</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.RegistrationEntries)
+                    {
+                        <tr>
+                            <td>@entry.CompetitionYearDisplay</td>
+                            <td>@entry.CompetitionDisplay</td>
+                            <td><span class="app-pill">@entry.CategoryDisplay</span></td>
+                            <td><span class="app-pill">@entry.EventType</span></td>
+                            <td>@entry.TeamDisplay</td>
+                            <td>
+                                <div class="fw-semibold">@entry.ActiveMemberCount active</div>
+                                <div class="text-muted small">@entry.MemberSummary</div>
+                            </td>
+                            <td>
+                                <span class="app-pill @(entry.IsActive ? string.Empty : "app-pill-danger")">
+                                    @entry.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/RegistrationEntries/Details"
+                                   asp-route-id="@entry.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

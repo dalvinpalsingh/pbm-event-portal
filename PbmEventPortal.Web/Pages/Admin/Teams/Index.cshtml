@@ -1,0 +1,81 @@
+﻿@page
+@model PbmEventPortal.Web.Pages.Admin.Teams.IndexModel
+@{
+    ViewData["Title"] = "Teams";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Administration</p>
+    <h1>Teams</h1>
+    <p>
+        Manage participating Punjabi Education Centres and their assigned Team Managers.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/Teams/Create">
+            Create Team
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.Teams.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No teams have been created yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Team</th>
+                        <th>State</th>
+                        <th>Region</th>
+                        <th>Team Managers</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var team in Model.Teams)
+                    {
+                        <tr>
+                            <td>
+                                <span class="app-pill">@team.Code</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@team.NameEnglish</div>
+
+                                @if (!string.IsNullOrWhiteSpace(team.NameGurmukhi))
+                                {
+                                    <div class="text-muted small">@team.NameGurmukhi</div>
+                                }
+                            </td>
+                            <td>@team.StateName</td>
+                            <td>@team.RegionName</td>
+                            <td>@team.TeamManagerCount</td>
+                            <td>
+                                <span class="app-pill">@team.StatusDisplay</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/Teams/Details"
+                                   asp-route-id="@team.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

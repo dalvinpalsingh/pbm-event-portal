@@ -1,0 +1,585 @@
+@page
+@using System.Text.Json
+@model PbmEventPortal.Web.Pages.Admin.CompetitionScoringCriteria.CreateModel
+@{
+    ViewData["Title"] = "Add Scoring Criteria";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+
+    var competitionOptionsJson = JsonSerializer.Serialize(
+        Model.CompetitionOptions,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+    var existingScoringCriterionLinksJson = JsonSerializer.Serialize(
+        Model.ExistingScoringCriterionLinks,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+    var postedCriteriaJson = JsonSerializer.Serialize(
+        Model.Input.Criteria,
+        new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Add Scoring Criteria</h1>
+    <p>
+        Configure scoring criteria for a competition, within the competition’s configured criteria count.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="createScoringCriterionForm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.CompetitionId" class="form-label">
+                    Competition <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.CompetitionId" class="form-select" id="competitionSelect" required>
+                    <option value="">Select competition...</option>
+                    @foreach (var competition in Model.CompetitionOptions)
+                    {
+                        <option value="@competition.Id"
+                                data-criteria-count="@competition.CriteriaCount"
+                                data-competition-type="@competition.CompetitionType">
+                            @competition.DisplayText
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="Input.CompetitionId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="competitionTypeDisplayInput">Competition type</label>
+                <input type="text"
+                       class="form-control"
+                       id="competitionTypeDisplayInput"
+                       value=""
+                       disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="criteriaCountDisplayInput">Criteria count</label>
+                <input type="number"
+                       class="form-control"
+                       id="criteriaCountDisplayInput"
+                       value=""
+                       disabled />
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Criteria</h2>
+                    <p class="text-muted mb-0">
+                        Criteria are generated in fixed order based on the selected competition’s criteria count.
+                    </p>
+                </div>
+
+                <div class="form-text d-none mb-3" id="noAvailableCriterionNumbersHelpText">
+                    All criterion numbers have already been configured for this competition.
+                </div>
+
+                <div class="row g-3" id="criteriaContainer"></div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelCreateScoringCriterionModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetCreateScoringCriterionModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitScoringCriterionButton">
+                Add Scoring Criteria
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="createScoringCriterionResultModal" tabindex="-1" aria-labelledby="createScoringCriterionResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="createScoringCriterionResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/CompetitionScoringCriteria/Index">
+                        View All Scoring Criteria
+                    </a>
+
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetCreateScoringCriterionModal" tabindex="-1" aria-labelledby="resetCreateScoringCriterionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetCreateScoringCriterionModalLabel">
+                        Reset form?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will clear all entered scoring criteria details and return the form to its default state.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelCreateScoringCriterionModal" tabindex="-1" aria-labelledby="cancelCreateScoringCriterionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelCreateScoringCriterionModalLabel">
+                        Cancel adding scoring criteria?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any details entered on this page will not be saved.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/CompetitionScoringCriteria/Index">
+                    Cancel adding criteria
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const competitionOptions = @Html.Raw(competitionOptionsJson);
+            const existingScoringCriterionLinks = @Html.Raw(existingScoringCriterionLinksJson);
+            const postedCriteria = @Html.Raw(postedCriteriaJson);
+
+            const form = document.getElementById("createScoringCriterionForm");
+            const competitionSelect = document.getElementById("competitionSelect");
+            const competitionTypeDisplayInput = document.getElementById("competitionTypeDisplayInput");
+            const criteriaCountDisplayInput = document.getElementById("criteriaCountDisplayInput");
+            const criteriaContainer = document.getElementById("criteriaContainer");
+            const noAvailableCriterionNumbersHelpText = document.getElementById("noAvailableCriterionNumbersHelpText");
+            const submitScoringCriterionButton = document.getElementById("submitScoringCriterionButton");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function getSelectedCompetitionId() {
+                return competitionSelect?.value ?? "";
+            }
+
+            function getSelectedCompetition() {
+                const competitionId = getSelectedCompetitionId();
+
+                if (!competitionId) {
+                    return null;
+                }
+
+                return competitionOptions.find((competition) =>
+                    competition.id.toLowerCase() === competitionId.toLowerCase()) ?? null;
+            }
+
+            function getCompetitionTypeDisplay(competitionType) {
+                if (competitionType === "INDIVIDUAL") {
+                    return "Individual";
+                }
+
+                if (competitionType === "TEAM") {
+                    return "Team";
+                }
+
+                return competitionType ?? "";
+            }
+
+            function criterionNoAlreadyExists(competitionId, criterionNo) {
+                if (!competitionId || !criterionNo) {
+                    return false;
+                }
+
+                return existingScoringCriterionLinks.some((link) =>
+                    link.competitionId.toLowerCase() === competitionId.toLowerCase() &&
+                    Number(link.criterionNo) === Number(criterionNo));
+            }
+
+            function getAvailableCriterionNumbers() {
+                const selectedCompetition = getSelectedCompetition();
+                const selectedCompetitionId = getSelectedCompetitionId();
+
+                if (!selectedCompetition) {
+                    return [];
+                }
+
+                const availableNumbers = [];
+
+                for (let criterionNo = 1; criterionNo <= selectedCompetition.criteriaCount; criterionNo += 1) {
+                    if (!criterionNoAlreadyExists(selectedCompetitionId, criterionNo)) {
+                        availableNumbers.push(criterionNo);
+                    }
+                }
+
+                return availableNumbers;
+            }
+
+            function getCriterionColumns() {
+                return Array.from(criteriaContainer?.querySelectorAll("[data-criterion-column]") ?? []);
+            }
+
+            function sanitizeMaxScoreInput(input) {
+                if (!input || !input.value) {
+                    return;
+                }
+
+                const rawValue = input.value.trim().replace(",", ".");
+                const wholeNumberValue = rawValue.includes(".")
+                    ? rawValue.split(".")[0]
+                    : rawValue;
+                const numericValue = Number(wholeNumberValue);
+
+                if (Number.isNaN(numericValue)) {
+                    input.value = "";
+                    return;
+                }
+
+                if (numericValue < 0) {
+                    input.value = "0";
+                    return;
+                }
+
+                if (numericValue > 100) {
+                    input.value = "100";
+                    return;
+                }
+
+                input.value = numericValue.toString();
+            }
+
+            function sanitizeAllMaxScoreInputs() {
+                criteriaContainer?.querySelectorAll("[data-max-score-input]").forEach((input) => {
+                    sanitizeMaxScoreInput(input);
+                });
+            }
+
+            function createCriterionColumn(criterionNo, criterion = null) {
+                const column = document.createElement("div");
+                column.className = "col-12 col-md-6 col-xl-4";
+                column.dataset.criterionColumn = "true";
+
+                column.innerHTML = `
+                    <div class="scoring-criterion-box h-100">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">
+                                    Criterion no. <span class="app-required">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       data-visible-criterion-no
+                                       readonly />
+                                <input type="hidden" data-criterion-no-input />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Criterion name</label>
+                                <input type="text"
+                                       class="form-control"
+                                       data-criterion-name-input
+                                       maxlength="100" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Max score</label>
+                                <input type="number"
+                                       class="form-control"
+                                       data-max-score-input
+                                       min="0"
+                                       max="100"
+                                       step="1" />
+                                <div class="form-text">
+                                    Optional. Whole number from 0 to 100 only.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           data-is-active-input
+                                           value="true" />
+                                    <input type="hidden" data-is-active-hidden-input value="false" />
+                                    <label class="form-check-label">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const visibleCriterionNo = column.querySelector("[data-visible-criterion-no]");
+                const criterionNoInput = column.querySelector("[data-criterion-no-input]");
+                const criterionNameInput = column.querySelector("[data-criterion-name-input]");
+                const maxScoreInput = column.querySelector("[data-max-score-input]");
+                const isActiveInput = column.querySelector("[data-is-active-input]");
+
+                if (visibleCriterionNo) {
+                    visibleCriterionNo.value = criterionNo.toString();
+                }
+
+                if (criterionNoInput) {
+                    criterionNoInput.value = criterionNo.toString();
+                }
+
+                if (criterionNameInput) {
+                    criterionNameInput.value = criterion?.criterionName ?? "";
+                }
+
+                if (maxScoreInput) {
+                    maxScoreInput.value = criterion?.maxScore ?? "";
+                    maxScoreInput.addEventListener("blur", () => sanitizeMaxScoreInput(maxScoreInput));
+                }
+
+                if (isActiveInput) {
+                    isActiveInput.checked = criterion?.isActive ?? true;
+                }
+
+                return column;
+            }
+
+            function nameCriterionInputs() {
+                const columns = getCriterionColumns();
+
+                columns.forEach((column, index) => {
+                    const criterionNoInput = column.querySelector("[data-criterion-no-input]");
+                    const criterionNameInput = column.querySelector("[data-criterion-name-input]");
+                    const maxScoreInput = column.querySelector("[data-max-score-input]");
+                    const isActiveInput = column.querySelector("[data-is-active-input]");
+                    const isActiveHiddenInput = column.querySelector("[data-is-active-hidden-input]");
+
+                    if (criterionNoInput) {
+                        criterionNoInput.name = `Input.Criteria[${index}].CriterionNo`;
+                    }
+
+                    if (criterionNameInput) {
+                        criterionNameInput.name = `Input.Criteria[${index}].CriterionName`;
+                    }
+
+                    if (maxScoreInput) {
+                        maxScoreInput.name = `Input.Criteria[${index}].MaxScore`;
+                    }
+
+                    if (isActiveInput) {
+                        isActiveInput.name = `Input.Criteria[${index}].IsActive`;
+                    }
+
+                    if (isActiveHiddenInput) {
+                        isActiveHiddenInput.name = `Input.Criteria[${index}].IsActive`;
+                    }
+                });
+
+                updateSubmitButtonVisibility();
+            }
+
+            function updateCompetitionDisplays() {
+                const selectedCompetition = getSelectedCompetition();
+
+                if (competitionTypeDisplayInput) {
+                    competitionTypeDisplayInput.value = selectedCompetition
+                        ? getCompetitionTypeDisplay(selectedCompetition.competitionType)
+                        : "";
+                }
+
+                if (criteriaCountDisplayInput) {
+                    criteriaCountDisplayInput.value = selectedCompetition
+                        ? selectedCompetition.criteriaCount
+                        : "";
+                }
+            }
+
+            function updateSubmitButtonVisibility() {
+                const selectedCompetition = getSelectedCompetition();
+                const availableNumbers = getAvailableCriterionNumbers();
+                const columns = getCriterionColumns();
+
+                noAvailableCriterionNumbersHelpText?.classList.toggle(
+                    "d-none",
+                    !selectedCompetition || availableNumbers.length > 0);
+
+                if (submitScoringCriterionButton) {
+                    submitScoringCriterionButton.disabled = !selectedCompetition || columns.length === 0 || availableNumbers.length === 0;
+                }
+            }
+
+            function renderCriterionColumns(usePostedValues = false) {
+                if (!criteriaContainer) {
+                    return;
+                }
+
+                criteriaContainer.innerHTML = "";
+
+                const availableNumbers = getAvailableCriterionNumbers();
+
+                if (availableNumbers.length === 0) {
+                    updateSubmitButtonVisibility();
+                    return;
+                }
+
+                availableNumbers.forEach((criterionNo, index) => {
+                    const postedCriterion = usePostedValues && Array.isArray(postedCriteria)
+                        ? postedCriteria[index] ?? null
+                        : null;
+
+                    criteriaContainer.appendChild(createCriterionColumn(criterionNo, postedCriterion));
+                });
+
+                nameCriterionInputs();
+            }
+
+            function clearValidationMessages() {
+                document.querySelectorAll(".field-validation-error, .field-validation-valid").forEach((element) => {
+                    element.textContent = "";
+                });
+
+                document.querySelectorAll(".input-validation-error").forEach((element) => {
+                    element.classList.remove("input-validation-error");
+                });
+            }
+
+            function resetFormToDefaults() {
+                form?.reset();
+                clearValidationMessages();
+                updateCompetitionDisplays();
+                renderCriterionColumns(false);
+
+                const resetModalElement = document.getElementById("resetCreateScoringCriterionModal");
+                const resetModal = bootstrap.Modal.getInstance(resetModalElement);
+
+                resetModal?.hide();
+            }
+
+            competitionSelect?.addEventListener("change", () => {
+                updateCompetitionDisplays();
+                renderCriterionColumns(false);
+            });
+
+            confirmResetButton?.addEventListener("click", resetFormToDefaults);
+            submitScoringCriterionButton?.addEventListener("click", sanitizeAllMaxScoreInputs);
+            form?.addEventListener("submit", sanitizeAllMaxScoreInputs);
+
+            updateCompetitionDisplays();
+            renderCriterionColumns(postedCriteria.length > 0);
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("createScoringCriterionResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

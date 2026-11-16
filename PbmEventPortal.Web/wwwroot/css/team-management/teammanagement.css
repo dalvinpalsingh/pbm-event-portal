@@ -1,0 +1,166 @@
+.teammanagement-admin-team-selector-card {
+    width: min(100%, 405px);
+}
+
+    .teammanagement-admin-team-selector-card .app-searchable-select-menu {
+        display: block;
+        opacity: 0;
+        transform: translateY(-0.35rem);
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+    }
+
+        .teammanagement-admin-team-selector-card .app-searchable-select-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+.teammanagement-notice-card {
+    min-height: 92px;
+    display: flex;
+    align-items: center;
+}
+
+    .teammanagement-notice-card > .d-flex {
+        width: 100%;
+    }
+
+.teammanagement-dashboard-card,
+.teammanagement-manager-card {
+    border: 1px solid var(--bs-border-color);
+    color: inherit;
+    transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+    .teammanagement-dashboard-card:hover,
+    .teammanagement-dashboard-card:focus-visible,
+    .teammanagement-manager-card:hover,
+    .teammanagement-manager-card:focus-visible {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0.35rem 1rem rgba(37, 99, 235, 0.16);
+        transform: translateY(-1px);
+    }
+
+.teammanagement-dashboard-card {
+    text-align: left;
+    cursor: pointer;
+}
+
+.teammanagement-dashboard-card-warning {
+    border-color: var(--bs-warning);
+    background: var(--bs-warning-bg-subtle);
+}
+
+.teammanagement-dashboard-card-success {
+    border-color: var(--bs-success);
+    background: var(--bs-success-bg-subtle);
+}
+
+.teammanagement-dashboard-card-label {
+    margin-bottom: 0.55rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.teammanagement-collapsible-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}
+
+.teammanagement-sticky-section-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    width: calc(100% + 2.5rem);
+    margin: -1.25rem -1.25rem 1rem;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 0.45rem 1.25rem rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px) saturate(1.25);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+}
+
+    .teammanagement-collapsible.is-collapsed .teammanagement-sticky-section-header {
+        margin-bottom: 0;
+        border-bottom: 0;
+        border-radius: 0.75rem;
+        box-shadow: none;
+    }
+
+.teammanagement-collapse-chevron {
+    color: var(--bs-secondary-color);
+    font-size: 1rem;
+}
+
+.teammanagement-collapsible-body {
+    overflow: hidden;
+    transition: max-height 190ms ease, opacity 190ms ease;
+}
+
+.teammanagement-collapsible.is-collapsed > .teammanagement-collapsible-body {
+    max-height: 0;
+    opacity: 0;
+}
+
+.teammanagement-collapsible.is-expanded .teammanagement-manager-compact-view {
+    display: none;
+}
+
+.teammanagement-manager-card {
+    height: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 0.5rem;
+    background: #fff;
+}
+
+.teammanagement-manager-card-compact {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.teammanagement-manager-icon-button {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.teammanagement-manager-card.is-current-user {
+    border-color: var(--bs-primary);
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+    .teammanagement-manager-card.is-current-user .small {
+        color: rgba(255, 255, 255, 0.84);
+    }
+
+.teammanagement-modal-scroll-pane {
+    max-height: calc(100vh - 230px);
+    overflow-y: auto;
+}
+
+#teamManagementParticipantResetButton:disabled,
+#teamManagementParticipantSaveDraftButton:disabled,
+#teamManagementParticipantSaveButton:disabled {
+    cursor: not-allowed;
+    pointer-events: auto;
+}

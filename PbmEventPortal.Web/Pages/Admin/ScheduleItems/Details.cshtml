@@ -1,0 +1,119 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.ScheduleItems.DetailsModel
+@{
+    ViewData["Title"] = "View Schedule Item";
+    var scheduleItem = Model.ScheduleItem;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>View Schedule Item</h1>
+    <p>
+        View schedule item details used for event coordination and publishing.
+    </p>
+
+    @if (scheduleItem != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/ScheduleItems/Index">
+                Back to Schedule Items
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/ScheduleItems/Edit"
+               asp-route-id="@scheduleItem.Id">
+                Edit
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/ScheduleItems/Index">
+            Back to Schedule Items
+        </a>
+    }
+</div>
+
+@if (scheduleItem == null)
+{
+    <div class="app-alert app-alert-danger">
+        Schedule item not found.
+    </div>
+}
+else
+{
+    <div class="app-card">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Competition year</label>
+                <input type="text" class="form-control" value="@scheduleItem.CompetitionYearDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Schedule date</label>
+                <input type="text" class="form-control" value="@scheduleItem.DateDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Time</label>
+                <input type="text" class="form-control" value="@scheduleItem.TimeDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Reporting time</label>
+                <input type="text" class="form-control" value="@scheduleItem.ReportingTimeDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Display title</label>
+                <input type="text" class="form-control" value="@scheduleItem.DisplayTitle" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Schedule type</label>
+                <input type="text" class="form-control" value="@scheduleItem.ScheduleTypeDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Competition / Category</label>
+                <input type="text" class="form-control" value="@scheduleItem.CompetitionCategoryDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Venue</label>
+                <input type="text" class="form-control" value="@scheduleItem.VenueDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Session group</label>
+                <input type="text" class="form-control" value="@scheduleItem.SessionGroupDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Sequence number</label>
+                <input type="text" class="form-control" value="@scheduleItem.SequenceNoDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <div>
+                    <span class="app-pill">@scheduleItem.StatusDisplay</span>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Published</label>
+                <div>
+                    <span class="app-pill @(scheduleItem.IsPublished ? string.Empty : "app-pill-danger")">
+                        @scheduleItem.PublishedDisplay
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" rows="4" disabled>@scheduleItem.NotesDisplay</textarea>
+            </div>
+        </div>
+    </div>
+}

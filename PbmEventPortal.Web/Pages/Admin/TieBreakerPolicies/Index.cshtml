@@ -1,0 +1,90 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.TieBreakerPolicies.IndexModel
+@{
+    ViewData["Title"] = "Tie-Breaker Policies";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Tie-Breaker Policies</h1>
+    <p>
+        Review the tie-breaker rules used when results have equal scores or points.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/TieBreakerPolicies/Create">
+            Add Policy
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.TieBreakerPolicies.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No tie-breaker policies have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Policy</th>
+                        <th>Applies To</th>
+                        <th>Rules</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var policy in Model.TieBreakerPolicies)
+                    {
+                        <tr>
+                            <td>@policy.CompetitionYearNo</td>
+                            <td>
+                                <div class="fw-semibold">@policy.PolicyName</div>
+                            </td>
+                            <td>@policy.AppliesToDisplay</td>
+                            <td>
+                                @if (policy.Rules.Count == 0)
+                                {
+                                    <span class="text-muted small">No rules configured</span>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var rule in policy.Rules)
+                                        {
+                                            <span class="app-pill @(rule.IsActive ? string.Empty : "app-pill-danger")">
+                                                @rule.PriorityNo. @rule.RuleDisplay (@rule.DirectionDisplay)
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="app-pill @(policy.IsActive ? string.Empty : "app-pill-danger")">
+                                    @policy.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/TieBreakerPolicies/Details"
+                                   asp-route-id="@policy.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

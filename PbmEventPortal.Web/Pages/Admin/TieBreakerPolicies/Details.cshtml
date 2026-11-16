@@ -1,0 +1,125 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.TieBreakerPolicies.DetailsModel
+@{
+    ViewData["Title"] = "View Tie-Breaker Policy";
+    var tieBreakerPolicy = Model.TieBreakerPolicy;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>View Tie-Breaker Policy</h1>
+    <p>
+        View tie-breaker rules configured for this policy.
+    </p>
+
+    @if (tieBreakerPolicy != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/TieBreakerPolicies/Index">
+                Back to Tie-Breaker Policies
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/TieBreakerPolicies/Edit"
+               asp-route-id="@tieBreakerPolicy.Id">
+                Edit
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/TieBreakerPolicies/Index">
+            Back to Tie-Breaker Policies
+        </a>
+    }
+</div>
+
+@if (tieBreakerPolicy == null)
+{
+    <div class="app-alert app-alert-danger">
+        Tie-breaker policy not found.
+    </div>
+}
+else
+{
+    <div class="app-card">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Competition year</label>
+                <input type="text" class="form-control" value="@tieBreakerPolicy.CompetitionYearDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Policy name</label>
+                <input type="text" class="form-control" value="@tieBreakerPolicy.PolicyName" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Applies to</label>
+                <input type="text" class="form-control" value="@tieBreakerPolicy.AppliesToDisplay" disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <div>
+                    <span class="app-pill @(tieBreakerPolicy.IsActive ? string.Empty : "app-pill-danger")">
+                        @tieBreakerPolicy.StatusDisplay
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Tie-Breaker Rules</h2>
+                    <p class="text-muted mb-0">
+                        Rules are applied in priority order when tied results are calculated.
+                    </p>
+                </div>
+
+                @if (tieBreakerPolicy.Rules.Count == 0)
+                {
+                    <p class="text-muted mb-0">
+                        No tie-breaker rules have been configured for this policy yet.
+                    </p>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var rule in tieBreakerPolicy.Rules)
+                        {
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <div class="scoring-criterion-box h-100">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label">Priority</label>
+                                            <input type="number" class="form-control" value="@rule.PriorityNo" disabled />
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Rule</label>
+                                            <input type="text" class="form-control" value="@rule.RuleDisplay" disabled />
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Sort direction</label>
+                                            <input type="text" class="form-control" value="@rule.DirectionDisplay" disabled />
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Status</label>
+                                            <div>
+                                                <span class="app-pill @(rule.IsActive ? string.Empty : "app-pill-danger")">
+                                                    @rule.StatusDisplay
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

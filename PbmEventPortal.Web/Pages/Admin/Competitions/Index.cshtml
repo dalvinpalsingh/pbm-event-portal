@@ -1,0 +1,85 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.Competitions.IndexModel
+@{
+    ViewData["Title"] = "Competitions";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Competitions</h1>
+    <p>
+        Manage PBM competitions, judge requirements, categories, and scoring criteria.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/Competitions/Create">
+            Create Competition
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.Competitions.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No competitions have been created yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Competition</th>
+                        <th>Year</th>
+                        <th>Type</th>
+                        <th>Criteria</th>
+                        <th>Judges</th>
+                        <th>Categories</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var competition in Model.Competitions)
+                    {
+                        <tr>
+                            <td>
+                                <span class="app-pill">@competition.Code</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@competition.NameEnglish</div>
+
+                                @if (!string.IsNullOrWhiteSpace(competition.NameGurmukhi))
+                                {
+                                    <div class="text-muted small">@competition.NameGurmukhi</div>
+                                }
+                            </td>
+                            <td>@competition.CompetitionYearDisplay</td>
+                            <td>@competition.CompetitionType</td>
+                            <td>@competition.ScoringCriteriaCount / @competition.CriteriaCount</td>
+                            <td>@competition.JudgeRangeDisplay</td>
+                            <td>@competition.CategoryCount</td>
+                            <td>
+                                <span class="app-pill">@competition.StatusDisplay</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/Competitions/Details"
+                                   asp-route-id="@competition.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

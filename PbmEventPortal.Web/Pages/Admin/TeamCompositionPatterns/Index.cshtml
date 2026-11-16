@@ -1,0 +1,78 @@
+@page
+@model PbmEventPortal.Web.Pages.Admin.TeamCompositionPatterns.IndexModel
+@{
+    ViewData["Title"] = "Team Composition Patterns";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Registration setup</p>
+    <h1>Team Composition Patterns</h1>
+    <p>
+        Manage allowed Tahap slot patterns for team competition registrations and younger substitution rules.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/Index">
+            Back to Admin
+        </a>
+
+        <a class="btn btn-primary btn-sm" asp-page="/Admin/TeamCompositionPatterns/Create">
+            Add Team Composition Pattern
+        </a>
+    </div>
+</div>
+
+<div class="app-card">
+    @if (Model.TeamCompositionPatterns.Count == 0)
+    {
+        <p class="text-muted mb-0">
+            No team composition patterns have been configured yet.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Competition</th>
+                        <th>Category</th>
+                        <th>Pattern</th>
+                        <th>Team Size</th>
+                        <th>Slots</th>
+                        <th>Younger Substitution</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pattern in Model.TeamCompositionPatterns)
+                    {
+                        <tr>
+                            <td>@pattern.CompetitionYearDisplay</td>
+                            <td>@pattern.CompetitionDisplay</td>
+                            <td><span class="app-pill">@pattern.CategoryDisplay</span></td>
+                            <td class="fw-semibold">@pattern.PatternCode</td>
+                            <td>@pattern.TeamSize</td>
+                            <td>@pattern.SlotSummary</td>
+                            <td>@pattern.YoungerSubstitutionDisplay</td>
+                            <td>
+                                <span class="app-pill @(pattern.IsActive ? string.Empty : "app-pill-danger")">
+                                    @pattern.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-page="/Admin/TeamCompositionPatterns/Details"
+                                   asp-route-id="@pattern.Id">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

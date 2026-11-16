@@ -1,0 +1,205 @@
+@page
+@using Microsoft.EntityFrameworkCore
+@using PbmEventPortal.Data.NpgSQL
+@inject PbmDbContext DbContext
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isSystemAdmin = User.IsInRole("SYSTEM_ADMIN");
+    var isTeamManager = User.IsInRole("TEAM_MANAGER");
+    var isScoreVerifier = User.IsInRole("SCORE_VERIFIER");
+    var isJudge = User.IsInRole("JUDGE");
+    var hasAnyRole = User.Claims.Any(claim => claim.Type == System.Security.Claims.ClaimTypes.Role);
+    var workspaceCount = 0;
+    Guid? assignedTeamId = null;
+
+    if (isAuthenticated && isTeamManager && !isSystemAdmin)
+    {
+        var currentUserIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(currentUserIdValue, out var currentUserId))
+        {
+            assignedTeamId = await DbContext.UserRoleAssignments
+                .AsNoTracking()
+                .Where(roleAssignment =>
+                    roleAssignment.UserId == currentUserId &&
+                    roleAssignment.RoleCode == "TEAM_MANAGER" &&
+                    roleAssignment.IsActive &&
+                    roleAssignment.IsVerified &&
+                    roleAssignment.TeamId != null &&
+                    roleAssignment.Team != null &&
+                    roleAssignment.Team.IsActive)
+                .Select(roleAssignment => roleAssignment.TeamId)
+                .FirstOrDefaultAsync();
+        }
+    }
+
+    if (isSystemAdmin) workspaceCount++;
+    if (isSystemAdmin || isTeamManager) workspaceCount++;
+    if (isSystemAdmin) workspaceCount++;
+    if (isSystemAdmin || isJudge) workspaceCount++;
+}
+
+<div class="app-hero">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <p class="app-eyebrow">Sikh Naujawan Sabha Malaysia</p>
+
+            <h1 class="app-hero-title">
+                Punjabi Bhasha Mela 2026 Event Portal
+            </h1>
+
+            @if (!isAuthenticated)
+            {
+                <p class="app-hero-text">
+                    Sign in to access the Punjabi Bhasha Mela Event Portal.
+                </p>
+
+                <div class="app-action-row">
+                    <a class="btn btn-primary btn-lg" asp-page="/Login">
+                        Login
+                    </a>
+                </div>
+            }
+            else if (workspaceCount > 0)
+            {
+                <p class="app-hero-text">
+                    Welcome, @User.Identity?.Name.
+                </p>
+
+                <div class="app-action-row flex-wrap">
+                    @if (isSystemAdmin)
+                    {
+                        <a class="btn btn-primary btn-lg" asp-page="/Admin/Index">
+                            Open Admin Area
+                        </a>
+                    }
+
+                    @if (isSystemAdmin || isTeamManager)
+                    {
+                        @if (assignedTeamId.HasValue && !isSystemAdmin)
+                        {
+                            <a class="btn btn-outline-primary btn-lg" asp-page="/TeamManagement/TeamManagement" asp-route-teamId="@assignedTeamId.Value" data-app-loading="Loading team workspace...">
+                                Team Management
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-primary btn-lg" asp-page="/TeamManagement/TeamManagement" data-app-loading="Loading team workspace...">
+                                Team Management
+                            </a>
+                        }
+                    }
+
+                    @if (isSystemAdmin)
+                    {
+                        <a class="btn btn-outline-primary btn-lg" asp-page="/Admin/ScoreVerification/Index">
+                            Score Verification
+                        </a>
+                    }
+
+                    @if (isSystemAdmin || isJudge)
+                    {
+                        <button type="button" class="btn btn-outline-primary btn-lg" disabled>
+                            Judge Workspace
+                            <span class="badge text-bg-light border ms-2">Coming soon</span>
+                        </button>
+                    }
+
+                    <a class="btn btn-outline-danger btn-lg" asp-page="/Logout">
+                        Logout
+                    </a>
+                </div>
+            }
+            else if (hasAnyRole)
+            {
+                <p class="app-hero-text">
+                    You are signed in. Your assigned role does not have an enabled workspace yet.
+                </p>
+
+                <div class="app-action-row">
+                    <a class="btn btn-outline-danger btn-lg" asp-page="/Logout">
+                        Logout
+                    </a>
+                </div>
+            }
+            else
+            {
+                <p class="app-hero-text">
+                    You are signed in. Your available portal features will appear here once access has been assigned.
+                </p>
+
+                <div class="app-action-row">
+                    <a class="btn btn-outline-danger btn-lg" asp-page="/Logout">
+                        Logout
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-5">
+            @if (!isAuthenticated)
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Private portal</div>
+                    <div class="app-status-title">Login required</div>
+                    <p class="app-status-text">
+                        Access is limited to authorised PBM event users.
+                    </p>
+                </div>
+            }
+            else if (workspaceCount > 1)
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Multiple workspaces</div>
+                    <div class="app-status-title">Choose your workspace</div>
+                    <p class="app-status-text">
+                        You have access to multiple portal areas. Use the workspace buttons or the Workspaces menu to continue.
+                    </p>
+                </div>
+            }
+            else if (isSystemAdmin)
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Admin access</div>
+                    <div class="app-status-title">System Admin</div>
+                    <p class="app-status-text">
+                        You can access administration tools and protected system pages.
+                    </p>
+                </div>
+            }
+            else if (isTeamManager)
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Team Manager access</div>
+                    <div class="app-status-title">Team Management</div>
+                    <p class="app-status-text">
+                        You can manage participants and registration entries for your assigned team.
+                    </p>
+                </div>
+            }
+            else if (hasAnyRole)
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Workspace pending</div>
+                    <div class="app-status-title">Access assigned</div>
+                    <p class="app-status-text">
+                        Your account has assigned roles, but the matching workspace is not enabled yet.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="app-status-card">
+                    <div class="app-status-label">Limited access</div>
+                    <div class="app-status-title">Access pending</div>
+                    <p class="app-status-text">
+                        Your account is active, but no portal access has been assigned yet.
+                        Please contact the event administrator if you need access.
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,216 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.JudgeConflicts.EditModel
+@{
+    ViewData["Title"] = "Edit Judge Conflict";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+    var modalCssClass = resultIsSuccess ? "app-result-modal-success" : "app-result-modal-danger";
+    var modalIcon = resultIsSuccess ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Judge Conflict</h1>
+    <p>Update judge conflict details, or deactivate/reactivate the conflict.</p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editJudgeConflictForm">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.JudgeUserId" class="form-label">Judge <span class="app-required">*</span></label>
+                <select asp-for="Input.JudgeUserId" asp-items="Model.JudgeOptions" class="form-select" required data-searchable-select="true" data-searchable-placeholder="Search judge..."></select>
+                <span asp-validation-for="Input.JudgeUserId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.ConflictType" class="form-label">Conflict type <span class="app-required">*</span></label>
+                <select asp-for="Input.ConflictType" asp-items="Model.ConflictTypeOptions" class="form-select" required id="conflictTypeSelect"></select>
+                <span asp-validation-for="Input.ConflictType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-12 d-none" data-conflict-target="OWN_TEAM">
+                <label asp-for="Input.TeamId" class="form-label">Team <span class="app-required">*</span></label>
+                <select asp-for="Input.TeamId" asp-items="Model.TeamOptions" class="form-select" data-searchable-select="true" data-searchable-placeholder="Search team..."></select>
+                <span asp-validation-for="Input.TeamId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-12 d-none" data-conflict-target="RELATED_PARTICIPANT">
+                <label asp-for="Input.ParticipantId" class="form-label">Participant <span class="app-required">*</span></label>
+                <select asp-for="Input.ParticipantId" asp-items="Model.ParticipantOptions" class="form-select" data-searchable-select="true" data-searchable-placeholder="Search participant..."></select>
+                <span asp-validation-for="Input.ParticipantId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-12 d-none" data-conflict-target="CATEGORY_BLOCK">
+                <label asp-for="Input.CompetitionCategoryId" class="form-label">Competition category <span class="app-required">*</span></label>
+                <select asp-for="Input.CompetitionCategoryId" asp-items="Model.CompetitionCategoryOptions" class="form-select" data-searchable-select="true" data-searchable-placeholder="Search competition category..."></select>
+                <span asp-validation-for="Input.CompetitionCategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <div class="form-check mt-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label" id="notesLabel">Notes</label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="4" id="notesInput"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelEditJudgeConflictModal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetEditJudgeConflictModal">Reset</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Conflict</button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editJudgeConflictResultModal" tabindex="-1" aria-labelledby="editJudgeConflictResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editJudgeConflictResultModalLabel">@Model.ResultTitle</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">@Model.ResultMessage</p>
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-danger" asp-page="/Admin/JudgeConflicts/Index">View All Conflicts</a>
+                    @if (!resultIsSuccess)
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay, I’ll fix it</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditJudgeConflictModal" tabindex="-1" aria-labelledby="resetEditJudgeConflictModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditJudgeConflictModalLabel">Reset changes?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">This will reset the judge conflict fields back to the last loaded values.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Keep editing</button>
+                <button type="button" class="btn btn-danger" id="confirmResetButton">Reset changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditJudgeConflictModal" tabindex="-1" aria-labelledby="cancelEditJudgeConflictModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditJudgeConflictModalLabel">Cancel editing conflict?</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Any unsaved changes on this page will be lost.</div>
+            <div class="modal-footer">
+                <a class="btn btn-danger" asp-page="/Admin/JudgeConflicts/Details" asp-route-id="@Model.Input.Id">Cancel editing</a>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Stay here</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("editJudgeConflictForm");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+            const conflictTypeSelect = document.getElementById("conflictTypeSelect");
+            const targetSections = Array.from(document.querySelectorAll("[data-conflict-target]"));
+            const notesInput = document.getElementById("notesInput");
+            const notesLabel = document.getElementById("notesLabel");
+
+            function updateConflictTargetFields(clearHiddenValues) {
+                const selectedType = conflictTypeSelect?.value ?? "";
+
+                targetSections.forEach((section) => {
+                    const isVisible = section.dataset.conflictTarget === selectedType;
+                    section.classList.toggle("d-none", !isVisible);
+
+                    section.querySelectorAll("select").forEach((select) => {
+                        select.required = isVisible;
+                        select.disabled = !isVisible;
+
+                        if (!isVisible && clearHiddenValues) {
+                            select.value = "";
+                        }
+
+                        select.dispatchEvent(new Event("change", { bubbles: true }));
+                    });
+                });
+
+                if (notesInput && notesLabel) {
+                    const notesRequired = selectedType === "CUSTOM";
+                    notesInput.required = notesRequired;
+                    notesLabel.innerHTML = notesRequired ? 'Notes <span class="app-required">*</span>' : "Notes";
+                }
+            }
+
+            confirmResetButton?.addEventListener("click", () => {
+                form?.reset();
+                updateConflictTargetFields(false);
+                window.FormHelpers?.clearValidationMessages(form);
+                bootstrap.Modal.getInstance(document.getElementById("resetEditJudgeConflictModal"))?.hide();
+            });
+
+            conflictTypeSelect?.addEventListener("change", () => updateConflictTargetFields(true));
+            updateConflictTargetFields(false);
+        })();
+    </script>
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editJudgeConflictResultModal");
+                if (modalElement) new bootstrap.Modal(modalElement).show();
+            });
+        </script>
+    }
+}

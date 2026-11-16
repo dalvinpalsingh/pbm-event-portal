@@ -1,0 +1,329 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.Competitions.EditModel
+@{
+    ViewData["Title"] = "Edit Competition";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Competition</h1>
+    <p>
+        Update this PBM competition and its basic judging settings.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editCompetitionForm">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.CompetitionYearId" class="form-label">
+                    Competition year <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.CompetitionYearId" asp-items="Model.CompetitionYearOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.CompetitionYearId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.CompetitionType" class="form-label">
+                    Competition type <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.CompetitionType" asp-items="Model.CompetitionTypeOptions" class="form-select" required></select>
+                <span asp-validation-for="Input.CompetitionType" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.Code" class="form-label">
+                    Competition code <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.Code"
+                       class="form-control"
+                       id="competitionCodeInput"
+                       placeholder="KAVITA"
+                       required />
+                <span asp-validation-for="Input.Code" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Input.NameEnglish" class="form-label">
+                    English name <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.NameEnglish"
+                       class="form-control"
+                       required />
+                <span asp-validation-for="Input.NameEnglish" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-8">
+                <label asp-for="Input.NameGurmukhi" class="form-label"></label>
+                <input asp-for="Input.NameGurmukhi" class="form-control" />
+                <span asp-validation-for="Input.NameGurmukhi" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.CriteriaCount" class="form-label">
+                    Criteria count <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.CriteriaCount"
+                       class="form-control"
+                       min="1"
+                       max="20"
+                       required />
+                <span asp-validation-for="Input.CriteriaCount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.MinJudges" class="form-label">
+                    Minimum judges <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.MinJudges"
+                       class="form-control"
+                       min="1"
+                       max="10"
+                       required />
+                <span asp-validation-for="Input.MinJudges" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Input.MaxJudges" class="form-label">
+                    Maximum judges <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.MaxJudges"
+                       class="form-control"
+                       min="1"
+                       max="10"
+                       required />
+                <span asp-validation-for="Input.MaxJudges" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label"></label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelEditCompetitionModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetEditCompetitionModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editCompetitionResultModal" tabindex="-1" aria-labelledby="editCompetitionResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editCompetitionResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    @if (resultIsSuccess)
+                    {
+                        <a class="btn btn-outline-danger" asp-page="/Admin/Competitions/Index">
+                            View All Competitions
+                        </a>
+
+                        <a class="btn btn-primary"
+                           asp-page="/Admin/Competitions/Details"
+                           asp-route-id="@Model.Input.Id">
+                            View This Competition
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditCompetitionModal" tabindex="-1" aria-labelledby="resetEditCompetitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditCompetitionModalLabel">
+                        Reset changes?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will discard unsaved changes and reload the saved competition details.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditCompetitionModal" tabindex="-1" aria-labelledby="cancelEditCompetitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditCompetitionModalLabel">
+                        Cancel editing competition?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any unsaved changes on this page will be lost.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger"
+                   asp-page="/Admin/Competitions/Details"
+                   asp-route-id="@Model.Input.Id">
+                    Cancel editing
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const form = document.getElementById("editCompetitionForm");
+            const competitionCodeInput = document.getElementById("competitionCodeInput");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function normalizeCompetitionCode() {
+                if (!competitionCodeInput) {
+                    return;
+                }
+
+                competitionCodeInput.value = competitionCodeInput.value
+                    .trim()
+                    .toUpperCase()
+                    .replace(/\s+/g, "_");
+            }
+
+            function resetFormToSavedValues() {
+                window.location.href = window.location.pathname;
+            }
+
+            competitionCodeInput?.addEventListener("blur", normalizeCompetitionCode);
+
+            form?.addEventListener("submit", () => {
+                normalizeCompetitionCode();
+            });
+
+            confirmResetButton?.addEventListener("click", resetFormToSavedValues);
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editCompetitionResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

@@ -1,0 +1,472 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.CompetitionCategories.EditModel
+@{
+    ViewData["Title"] = "Edit Competition Category";
+
+    var serverErrors = ViewData.ModelState.Values
+        .SelectMany(value => value.Errors)
+        .Select(error => error.ErrorMessage)
+        .Where(message => !string.IsNullOrWhiteSpace(message))
+        .Distinct()
+        .ToList();
+
+    var shouldShowResultModal = Model.ResultIsSuccess.HasValue;
+    var resultIsSuccess = Model.ResultIsSuccess == true;
+
+    var modalCssClass = resultIsSuccess
+        ? "app-result-modal-success"
+        : "app-result-modal-danger";
+
+    var modalIcon = resultIsSuccess
+        ? "bi-check-circle-fill"
+        : "bi-exclamation-triangle-fill";
+
+    var isIndividualEvent = Model.Input.EventType == "INDIVIDUAL";
+    var isTeamEvent = Model.Input.EventType == "TEAM";
+    var maxWinnerCount = isTeamEvent
+        ? Model.TeamMaxWinnerCount
+        : Model.IndividualMaxWinnerCount;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>Edit Competition Category</h1>
+    <p>
+        Update category-level participation rules, winner rules, notes, and active status.
+    </p>
+    <p class="app-required-legend">
+        <span class="app-required">*</span> Mandatory field
+    </p>
+</div>
+
+<div class="app-card">
+    <form method="post" id="editCompetitionCategoryForm">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="competitionDisplayInput">Competition</label>
+                <input type="text"
+                       class="form-control"
+                       id="competitionDisplayInput"
+                       value="@Model.Input.CompetitionDisplay"
+                       disabled />
+                <div class="form-text">
+                    Competition identity is locked after creation.
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="competitionYearDisplayInput">Competition year</label>
+                <input type="text"
+                       class="form-control"
+                       id="competitionYearDisplayInput"
+                       value="@Model.Input.CompetitionYearNo"
+                       disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="eventTypeDisplayInput">Event type</label>
+                <input type="text"
+                       class="form-control"
+                       id="eventTypeDisplayInput"
+                       value="@Model.Input.EventTypeDisplay"
+                       disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="categoryDisplayInput">Category</label>
+                <input type="text"
+                       class="form-control"
+                       id="categoryDisplayInput"
+                       value="@Model.Input.CategoryDisplay"
+                       disabled />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="categoryCodeDisplayInput">Category code</label>
+                <input type="text"
+                       class="form-control"
+                       id="categoryCodeDisplayInput"
+                       value="@Model.Input.CategoryCode"
+                       disabled />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label" for="groupingTypeDisplayInput">Grouping type</label>
+                <input type="text"
+                       class="form-control"
+                       id="groupingTypeDisplayInput"
+                       value="@Model.Input.GroupingType"
+                       disabled />
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label" for="ageRangeDisplayInput">Age range</label>
+                <input type="text"
+                       class="form-control"
+                       id="ageRangeDisplayInput"
+                       value="@Model.Input.AgeRangeDisplay"
+                       disabled />
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.SortOrder" class="form-label">
+                    Sort order <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.SortOrder"
+                       class="form-control"
+                       min="1"
+                       required />
+                <span asp-validation-for="Input.SortOrder" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.WinnerCount" class="form-label">
+                    Winner count <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.WinnerCount"
+                       class="form-control"
+                       id="winnerCountInput"
+                       min="1"
+                       max="@maxWinnerCount"
+                       required />
+                <div class="form-text">
+                    Maximum winners: @maxWinnerCount
+                </div>
+                <span asp-validation-for="Input.WinnerCount" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 @(isIndividualEvent ? string.Empty : "d-none")" id="individualMaxParticipantsSection">
+                <label asp-for="Input.IndividualEventMaxParticipants" class="form-label">
+                    Max participants per team <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.IndividualEventMaxParticipants"
+                       class="form-control"
+                       id="individualMaxParticipantsInput"
+                       min="1"
+                       max="@Model.IndividualMaxParticipantsPerTeam" />
+                <div class="form-text">
+                    Maximum allowed: @Model.IndividualMaxParticipantsPerTeam
+                </div>
+                <span asp-validation-for="Input.IndividualEventMaxParticipants" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 @(isTeamEvent ? string.Empty : "d-none")" id="teamMaxEntriesSection">
+                <label asp-for="Input.TeamEventMaxEntriesPerTeam" class="form-label">
+                    Max team entries per team <span class="app-required">*</span>
+                </label>
+                <input asp-for="Input.TeamEventMaxEntriesPerTeam"
+                       class="form-control"
+                       id="teamMaxEntriesInput"
+                       min="1"
+                       max="@Model.TeamMaxEntriesPerTeam" />
+                <div class="form-text">
+                    Maximum allowed: @Model.TeamMaxEntriesPerTeam
+                </div>
+                <span asp-validation-for="Input.TeamEventMaxEntriesPerTeam" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 @(isTeamEvent ? string.Empty : "d-none")" id="teamSizeSection">
+                <label asp-for="Input.TeamEventTeamSize" class="form-label">
+                    Team size <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventTeamSize"
+                        asp-items="Model.TeamSizeOptions"
+                        class="form-select"
+                        id="teamSizeSelect"></select>
+                <span asp-validation-for="Input.TeamEventTeamSize" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 @(isTeamEvent ? string.Empty : "d-none")" id="teamGenderRestrictionSection">
+                <label asp-for="Input.TeamEventGenderRestrictions" class="form-label">
+                    Team gender restrictions <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventGenderRestrictions"
+                        class="form-select"
+                        id="teamGenderRestrictionSelect">
+                    <option value="">Select gender restriction...</option>
+                    @foreach (var option in Model.TeamGenderRestrictionOptions)
+                    {
+                        <option value="@option.Code"
+                                data-requires-team-size="@(option.Code == "ONE_BOY_ONE_GIRL" ? "2" : "")">
+                            @option.DisplayName
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="Input.TeamEventGenderRestrictions" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 @(isTeamEvent ? string.Empty : "d-none")" id="youngerSubstitutionSection">
+                <label asp-for="Input.TeamEventYoungerSubstitutionAllowed" class="form-label">
+                    Younger substitution allowed <span class="app-required">*</span>
+                </label>
+                <select asp-for="Input.TeamEventYoungerSubstitutionAllowed"
+                        class="form-select"
+                        id="youngerSubstitutionSelect">
+                    <option value="">Select...</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+                <span asp-validation-for="Input.TeamEventYoungerSubstitutionAllowed" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="Input.IsActive" class="form-check-input" />
+                    <label asp-for="Input.IsActive" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label"></label>
+                <textarea asp-for="Input.Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Input.Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelEditCompetitionCategoryModal">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetEditCompetitionCategoryModal">
+                    Reset
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (shouldShowResultModal)
+{
+    <div class="modal fade" id="editCompetitionCategoryResultModal" tabindex="-1" aria-labelledby="editCompetitionCategoryResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content app-result-modal @modalCssClass">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @modalIcon app-result-modal-icon" aria-hidden="true"></i>
+                        <h2 class="modal-title fs-5" id="editCompetitionCategoryResultModalLabel">
+                            @Model.ResultTitle
+                        </h2>
+                    </div>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="@(serverErrors.Count > 0 ? "mb-2" : "mb-0")">
+                        @Model.ResultMessage
+                    </p>
+
+                    @if (serverErrors.Count > 0)
+                    {
+                        <ul class="mb-0">
+                            @foreach (var error in serverErrors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    @if (resultIsSuccess)
+                    {
+                        <a class="btn btn-outline-danger" asp-page="/Admin/CompetitionCategories/Index">
+                            View All Competition Categories
+                        </a>
+
+                        <a class="btn btn-primary"
+                           asp-page="/Admin/CompetitionCategories/Details"
+                           asp-route-id="@Model.Input.Id">
+                            View This Category
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            Okay, I’ll fix it
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="resetEditCompetitionCategoryModal" tabindex="-1" aria-labelledby="resetEditCompetitionCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="resetEditCompetitionCategoryModalLabel">
+                        Reset changes?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                This will discard unsaved changes and reload the saved competition category details.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Keep editing
+                </button>
+
+                <button type="button" class="btn btn-danger" id="confirmResetButton">
+                    Reset changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelEditCompetitionCategoryModal" tabindex="-1" aria-labelledby="cancelEditCompetitionCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-result-modal app-result-modal-danger">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill app-result-modal-icon" aria-hidden="true"></i>
+                    <h2 class="modal-title fs-5" id="cancelEditCompetitionCategoryModalLabel">
+                        Cancel editing competition category?
+                    </h2>
+                </div>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Any unsaved changes on this page will be lost.
+            </div>
+
+            <div class="modal-footer">
+                <a class="btn btn-danger"
+                   asp-page="/Admin/CompetitionCategories/Details"
+                   asp-route-id="@Model.Input.Id">
+                    Cancel editing
+                </a>
+
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const individualEventType = "INDIVIDUAL";
+            const teamEventType = "TEAM";
+            const teamGenderOneBoyOneGirl = "ONE_BOY_ONE_GIRL";
+            const eventType = "@Model.Input.EventType";
+
+            const individualMaxParticipantsSection = document.getElementById("individualMaxParticipantsSection");
+            const teamMaxEntriesSection = document.getElementById("teamMaxEntriesSection");
+            const teamSizeSection = document.getElementById("teamSizeSection");
+            const teamGenderRestrictionSection = document.getElementById("teamGenderRestrictionSection");
+            const youngerSubstitutionSection = document.getElementById("youngerSubstitutionSection");
+
+            const individualMaxParticipantsInput = document.getElementById("individualMaxParticipantsInput");
+            const teamMaxEntriesInput = document.getElementById("teamMaxEntriesInput");
+            const teamSizeSelect = document.getElementById("teamSizeSelect");
+            const teamGenderRestrictionSelect = document.getElementById("teamGenderRestrictionSelect");
+            const youngerSubstitutionSelect = document.getElementById("youngerSubstitutionSelect");
+            const confirmResetButton = document.getElementById("confirmResetButton");
+
+            function setElementRequiredAndEnabled(element, enabled) {
+                if (!element) {
+                    return;
+                }
+
+                element.disabled = !enabled;
+                element.required = enabled;
+            }
+
+            function updateOneBoyOneGirlVisibility() {
+                if (!teamGenderRestrictionSelect || !teamSizeSelect) {
+                    return;
+                }
+
+                const teamSize = teamSizeSelect.value;
+
+                Array.from(teamGenderRestrictionSelect.options).forEach((option) => {
+                    if (option.value !== teamGenderOneBoyOneGirl) {
+                        return;
+                    }
+
+                    option.hidden = teamSize !== "2";
+                    option.disabled = teamSize !== "2";
+
+                    if (teamGenderRestrictionSelect.value === teamGenderOneBoyOneGirl && teamSize !== "2") {
+                        teamGenderRestrictionSelect.value = "";
+                    }
+                });
+            }
+
+            function updateEventTypeSections() {
+                const isIndividualEvent = eventType === individualEventType;
+                const isTeamEvent = eventType === teamEventType;
+
+                individualMaxParticipantsSection?.classList.toggle("d-none", !isIndividualEvent);
+                teamMaxEntriesSection?.classList.toggle("d-none", !isTeamEvent);
+                teamSizeSection?.classList.toggle("d-none", !isTeamEvent);
+                teamGenderRestrictionSection?.classList.toggle("d-none", !isTeamEvent);
+                youngerSubstitutionSection?.classList.toggle("d-none", !isTeamEvent);
+
+                setElementRequiredAndEnabled(individualMaxParticipantsInput, isIndividualEvent);
+
+                setElementRequiredAndEnabled(teamMaxEntriesInput, isTeamEvent);
+                setElementRequiredAndEnabled(teamSizeSelect, isTeamEvent);
+                setElementRequiredAndEnabled(teamGenderRestrictionSelect, isTeamEvent);
+                setElementRequiredAndEnabled(youngerSubstitutionSelect, isTeamEvent);
+
+                updateOneBoyOneGirlVisibility();
+            }
+
+            function resetFormToSavedValues() {
+                window.location.href = window.location.pathname;
+            }
+
+            teamSizeSelect?.addEventListener("change", updateOneBoyOneGirlVisibility);
+            confirmResetButton?.addEventListener("click", resetFormToSavedValues);
+
+            updateEventTypeSections();
+        })();
+    </script>
+
+    @if (shouldShowResultModal)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const modalElement = document.getElementById("editCompetitionCategoryResultModal");
+
+                if (!modalElement) {
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
+        </script>
+    }
+}

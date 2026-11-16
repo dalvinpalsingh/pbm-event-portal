@@ -1,0 +1,107 @@
+@page "{id:guid}"
+@model PbmEventPortal.Web.Pages.Admin.CompetitionScoringCriteria.DetailsModel
+@{
+    ViewData["Title"] = "View Scoring Criteria";
+    var scoringCriteria = Model.ScoringCriteria;
+}
+
+<div class="app-page-header">
+    <p class="app-eyebrow">Event setup</p>
+    <h1>View Scoring Criteria</h1>
+    <p>
+        View scoring criteria configured for this competition.
+    </p>
+
+    @if (scoringCriteria != null)
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionScoringCriteria/Index">
+                Back to Scoring Criteria
+            </a>
+
+            <a class="btn btn-primary btn-sm"
+               asp-page="/Admin/CompetitionScoringCriteria/Edit"
+               asp-route-id="@scoringCriteria.CompetitionId">
+                Edit
+            </a>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-outline-danger btn-sm" asp-page="/Admin/CompetitionScoringCriteria/Index">
+            Back to Scoring Criteria
+        </a>
+    }
+</div>
+
+@if (scoringCriteria == null)
+{
+    <div class="app-alert app-alert-danger">
+        Scoring criteria not found.
+    </div>
+}
+else
+{
+    <div class="app-card">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Competition</label>
+                <input type="text" class="form-control" value="@scoringCriteria.CompetitionDisplay" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Competition type</label>
+                <input type="text" class="form-control" value="@scoringCriteria.CompetitionTypeDisplay" disabled />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Criteria count</label>
+                <input type="number" class="form-control" value="@scoringCriteria.CompetitionCriteriaCount" disabled />
+            </div>
+
+            <div class="col-12">
+                <div class="mb-2">
+                    <h2 class="h5 mb-1">Criteria</h2>
+                    <p class="text-muted mb-0">
+                        Criterion order is fixed for V1.
+                    </p>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var criterion in scoringCriteria.Criteria)
+                    {
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="scoring-criterion-box h-100">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Criterion no.</label>
+                                        <input type="text" class="form-control" value="@criterion.CriterionNo" disabled />
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Criterion name</label>
+                                        <input type="text" class="form-control" value="@criterion.CriterionNameDisplay" disabled />
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Max score</label>
+                                        <input type="text" class="form-control" value="@criterion.MaxScoreDisplay" disabled />
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Status</label>
+                                        <div>
+                                            <span class="app-pill @(criterion.IsActive ? string.Empty : "app-pill-danger")">
+                                                @criterion.StatusDisplay
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
